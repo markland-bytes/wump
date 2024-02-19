@@ -1,0 +1,5 @@
+# don't include node_modules in the docker image
+node_modules/
+
+# done include the postgres data in the docker image
+postgres_data/
