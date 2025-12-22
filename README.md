@@ -3,28 +3,16 @@
 **Dependency sponsorship discovery API that helps open-source maintainers find organizations using their packages for potential sponsorship opportunities.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 
 ---
 
 ## 🎯 What is wump?
 
-Open-source maintainers struggle to identify which organizations use their packages in production. **wump** solves this by:
+**The Problem:** Open-source maintainers don't know which organizations use their packages—making it impossible to pursue sponsorship opportunities.
 
-1. **Aggregating dependency data** from GitHub repositories across organizations
-2. **Mapping packages to organizations** that use them in production
-3. **Providing a searchable API** to answer: "Who's using my package?"
-4. **Enabling targeted outreach** for sponsorship opportunities
+**The Solution:** wump aggregates dependency data from GitHub and provides a searchable API to answer: "Who's using my package?" 
 
-### The Problem
-
-- Maintainers don't know which companies depend on their work
-- Organizations benefit from open-source but lack easy ways to support it
-- Sponsorship outreach is inefficient and often misses key opportunities
-
-### The Solution
-
-A simple REST API where you can query:
+Example query:
 ```bash
 GET /api/v1/packages/fastapi/users
 # Returns: [{org: "Netflix", repos: 12}, {org: "Uber", repos: 8}, ...]
@@ -32,141 +20,66 @@ GET /api/v1/packages/fastapi/users
 
 ---
 
-## 🌟 Key Features
+## 🚀 Getting Started
 
-- **📦 Package Discovery**: Search by package name, ecosystem (npm, PyPI, etc.)
-- **🏢 Organization Insights**: See which orgs use your packages, with repository counts
-- **🔍 Flexible Queries**: Filter by stars, language, last updated
-- **⚡ Fast API**: Sub-500ms response times with caching
-- **🔐 API Authentication**: Rate-limited access with API keys
-- **📊 Background Jobs**: Automated data collection and updates
+### With Docker Compose (Recommended)
 
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.14+
-- Docker & Docker Compose
-- uv (Python package manager)
-
-### Local Development Setup
-
-1. **Clone and setup environment:**
 ```bash
-git clone https://github.com/yourusername/wump.git
+git clone https://github.com/markland-bytes/wump.git
 cd wump
 
-# Copy environment template
-cp .env.example .env
+# Copy environment template for the API service
+cp api/.env.example api/.env
 
-# Edit .env and add your API keys
+# Start all services
+docker compose up -d
 ```
 
-2. **Start services with Docker Compose:**
-```bash
-docker-compose up -d
-```
-
-This starts:
-- FastAPI application (http://localhost:8000)
-- PostgreSQL 18 database
-- Valkey 8.x (Redis-compatible cache)
-
-3. **Access the API:**
+Access the API at:
 - **API**: http://localhost:8000
 - **Interactive docs**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 - **Health check**: http://localhost:8000/health
 
-### Development without Docker
+For detailed setup instructions, see [QUICKSTART.md](QUICKSTART.md)
 
-```bash
-# Install uv if not already installed
-pip install uv
+### Local Development
 
-# Install dependencies
-uv sync
+For running commands directly on your machine (e.g., `uv run pytest`, `uv run mypy`), see [api/README.md](api/README.md)
 
-# Run database migrations (when implemented)
-# alembic upgrade head
+### Prerequisites
 
-# Start the development server
-uv run uvicorn app.main:app --reload
-```
+- **Docker** & **Docker Compose** - All services run in containers
 
-## 📁 Project Structure
+---
+
+## 📁 Repository Structure
 
 ```
-wump/
-├── app/
-│   ├── api/              # API routes and endpoints
-│   ├── core/             # Core config, logging, etc.
-│   ├── models/           # SQLAlchemy database models
-│   ├── schemas/          # Pydantic request/response schemas
-│   ├── services/         # Business logic
-│   ├── providers/        # External data providers (GitHub, etc.)
-│   └── main.py           # FastAPI application entry point
-├── tests/                # Test suite
-├── ARCHITECTURE.md       # System architecture and database schema
-├── docker-compose.yml    # Local development services
-├── Dockerfile            # Container image
-├── pyproject.toml        # Python dependencies (uv)
-└── .env.example          # Environment variables template
+wump/                    # Repository root & orchestration
+├── api/                 # REST API service (FastAPI)
+├── docker-compose.yml   # Service orchestration
+├── ARCHITECTURE.md      # Technical design & database schema
+├── DEVELOPMENT.md       # Contributing guidelines
+├── QUICKSTART.md        # 5-minute setup guide
+└── README.md            # This file
 ```
 
-## 🛠️ Tech Stack
+## 📚 Documentation & Contributing
 
-- **Runtime**: Python 3.14
-- **Framework**: FastAPI 0.115+
-- **Database**: PostgreSQL 18
-- **Cache**: Valkey 8.x (Redis-compatible)
-- **ORM**: SQLAlchemy 2.0+ (async)
-- **Migrations**: Alembic
-- **Validation**: Pydantic v2
-- **Testing**: pytest + httpx
-- **Logging**: structlog (JSON)
-- **Package Manager**: uv
+**Getting Started:**
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup guide with Docker
 
-## 📚 Documentation
+**Contributing & Development:**
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Git workflow, commit conventions, PR process
 
-- [**QUICKSTART.md**](QUICKSTART.md) - 5-minute setup guide
-- [**DEVELOPMENT.md**](DEVELOPMENT.md) - Git workflow, commit conventions, contributing
-- [**ARCHITECTURE.md**](ARCHITECTURE.md) - Technical design, database schema, API specs
-
-## 🧪 Testing
-
-```bash
-# Run tests
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=app --cov-report=html
-
-# Run linting
-uv run ruff check .
-
-# Run type checking
-uv run mypy app/
-```
-
-## 📋 Project Management
-
-We use **GitHub Issues + Projects** for task management:
-- 📊 [Project Board](https://github.com/markland-bytes/wump/projects) - Current sprint and backlog
-- 🐛 [Issues](https://github.com/markland-bytes/wump/issues) - Bugs, features, and tasks
+**Technical Details:**
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and database schema
+- **[api/README.md](api/README.md)** - API service development setup and commands
 
 ## 📝 License
 
 MIT
-
-## 🤝 Contributing
-
-We welcome contributions! Please see [DEVELOPMENT.md](DEVELOPMENT.md) for:
-- Git workflow and branch naming conventions
-- Commit message format
-- Pull request process
-- Code standards and testing requirements
 
 ## 🗺️ Roadmap
 
