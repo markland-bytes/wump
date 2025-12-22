@@ -1,12 +1,12 @@
 services:
   api:
     build:
-      context: .
+      context: ./api
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - ./src:/code/src
+      - ./api/src:/code/src
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/wump
       - VALKEY_URL=redis://valkey:6379/0
