@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir uv
 
 WORKDIR /code
 
-# Copy dependency files
-COPY pyproject.toml ./
+# Copy dependency files and README (required by hatchling)
+COPY pyproject.toml README.md ./
 
 # Install dependencies using uv
 RUN uv pip install --system -e ".[dev]"
