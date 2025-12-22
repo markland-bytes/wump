@@ -1,0 +1,59 @@
+name: 🔌 New Data Provider
+description: Request support for a new package ecosystem or data source
+title: "[Provider]: "
+labels: ["provider", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Request support for a new package ecosystem or data source!
+
+  - type: input
+    id: provider-name
+    attributes:
+      label: Provider Name
+      description: What ecosystem or data source?
+      placeholder: e.g., Maven Central, RubyGems, Cargo (Rust), etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Why is this provider important?
+      placeholder: Many maintainers in the [ecosystem] community would benefit from...
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-info
+    attributes:
+      label: API Information
+      description: Does this provider have an API we can use?
+      placeholder: |
+        - API URL: https://...
+        - Documentation: https://...
+        - Authentication: API key / OAuth / Public
+        - Rate limits: X requests per hour
+    validations:
+      required: true
+
+  - type: input
+    id: popularity
+    attributes:
+      label: Ecosystem Size
+      description: Approximate number of packages or users
+      placeholder: e.g., "500K+ packages, 10M+ developers"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be interested in contributing this provider?
+      options:
+        - label: I'd like to implement this provider myself
+        - label: I can help test the implementation
+        - label: I can provide sample data or examples
