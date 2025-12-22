@@ -47,6 +47,11 @@ def run_migrations_offline() -> None:
 
     """
     url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+    if not url or url.startswith("driver://"):
+        raise RuntimeError(
+            "DATABASE_URL environment variable not set or is a placeholder. "
+            "Make sure to run this within the docker-compose container."
+        )
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -59,7 +64,14 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    # For autogenerate, we need to compare the models with the database
+    # Set compare_type and compare_server_default to avoid false diffs
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        compare_server_default=True,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -70,10 +82,15 @@ async def run_async_migrations() -> None:
     and associate a connection with the context.
 
     """
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = os.getenv(
-        "DATABASE_URL", configuration.get("sqlalchemy.url")
-    )
+    # Get the DATABASE_URL from environment, required for autogenerate
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError(
+            "DATABASE_URL environment variable not set. "
+            "Make sure to run this within the docker-compose container."
+        )
+
+    configuration = {"sqlalchemy.url": database_url}
 
     connectable = async_engine_from_config(
         configuration,
