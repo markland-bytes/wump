@@ -1,0 +1,136 @@
+name: CI - Tests & Quality
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: wump
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      valkey:
+        image: valkey/valkey:8-alpine
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+      
+      - name: Install dependencies
+        working-directory: ./api
+        run: |
+          uv sync --locked --all-extras
+      
+      - name: Run pytest
+        working-directory: ./api
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/wump
+          VALKEY_URL: redis://localhost:6379/0
+          ENVIRONMENT: testing
+          LOG_LEVEL: WARNING
+        run: |
+          uv run pytest src/tests/ -v --tb=short --cov=src/app --cov-report=term-missing
+      
+      - name: Run type checking (mypy)
+        working-directory: ./api
+        run: |
+          uv run mypy src/app/ --strict
+        continue-on-error: true
+      
+      - name: Run linting (ruff)
+        working-directory: ./api
+        run: |
+          uv run ruff check src/app/ --select E,F,W --statistics
+        continue-on-error: true
+      
+      - name: Upload coverage reports
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./api/.coverage
+          flags: unittests
+          name: codecov-umbrella
+        continue-on-error: true
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+      
+      - name: Install dependencies
+        working-directory: ./api
+        run: |
+          uv sync --locked --all-extras
+      
+      - name: Format check (ruff)
+        working-directory: ./api
+        run: |
+          uv run ruff format --check src/app/
+        continue-on-error: true
+      
+      - name: Import organization (ruff)
+        working-directory: ./api
+        run: |
+          uv run ruff check --select I src/app/
+        continue-on-error: true
+
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./api
+          push: false
+          tags: wump:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
