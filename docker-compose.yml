@@ -18,7 +18,7 @@ services:
     depends_on:
       - db
       - valkey
-    command: uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
 
   db:
     image: postgres:18-alpine

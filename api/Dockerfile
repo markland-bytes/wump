@@ -12,13 +12,16 @@ RUN pip install --no-cache-dir uv
 WORKDIR /code
 
 # Copy dependency files and README (required by hatchling)
-COPY pyproject.toml README.md ./
-
-# Install dependencies using uv
-RUN uv pip install --system -e ".[dev]"
+COPY pyproject.toml uv.lock README.md ./
 
 # Copy application code
 COPY src ./src
+
+# Install dependencies using uv sync (includes all extras for dev tools)
+RUN uv sync --locked --all-extras
+
+# Add the virtual environment to PATH
+ENV PATH="/code/.venv/bin:$PATH"
 
 # Expose port
 EXPOSE 8000
