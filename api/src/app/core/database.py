@@ -15,6 +15,16 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+class DBErrorMessage:
+    """Standardized database error messages."""
+    CREATE_ENGINE_NO_URL = "Database URL is not configured"
+    CREATE_ENGINE_MIN_DB_POOL_SIZE = "DATABASE_POOL_SIZE must be at least 1"
+    CREATE_ENGINE_NEGATIVE_MAX_OVERFLOW = "DATABASE_MAX_OVERFLOW must be non-negative"
+    CREATE_ENGINE_FAILED = "Failed to create database engine"
+    
+    GET_DB_SESSION_FAILED = "Failed to create database session"
+    CLOSE_DATABASE_FAILED = "Failed to close database connections"
+
 
 def create_engine() -> AsyncEngine:
     """Create AsyncEngine with connection pooling configuration.
@@ -33,13 +43,13 @@ def create_engine() -> AsyncEngine:
     """
     try:
         if not settings.database_url:
-            raise ValueError("DATABASE_URL is not configured")
+            raise ValueError(DBErrorMessage.CREATE_ENGINE_NO_URL)
             
         if settings.database_pool_size < 1:
-            raise ValueError("DATABASE_POOL_SIZE must be at least 1")
+            raise ValueError(DBErrorMessage.CREATE_ENGINE_MIN_DB_POOL_SIZE)
             
         if settings.database_max_overflow < 0:
-            raise ValueError("DATABASE_MAX_OVERFLOW must be non-negative")
+            raise ValueError(DBErrorMessage.CREATE_ENGINE_NEGATIVE_MAX_OVERFLOW)
         
         logger.info(
             "Creating async database engine",
@@ -61,8 +71,8 @@ def create_engine() -> AsyncEngine:
     except ValueError:
         raise
     except Exception as e:
-        logger.error("Failed to create database engine: configuration error")
-        raise ValueError("Failed to create database engine") from e
+        logger.error(f"Failed to create database engine, due to configuration error: {e}")
+        raise ValueError(DBErrorMessage.CREATE_ENGINE_FAILED) from e
 
 
 # Create engine instance
@@ -99,8 +109,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
     except Exception as e:
         await session.rollback()
-        logger.error("Database session error occurred")
-        raise RuntimeError("Database session failed") from e
+        logger.error(f"Database session error occurred: {e}")
+        raise RuntimeError(DBErrorMessage.GET_DB_SESSION_FAILED) from e
 
 
 async def check_database_connection() -> bool:
@@ -117,7 +127,7 @@ async def check_database_connection() -> bool:
         logger.debug("Database connection check passed")
         return True
     except Exception as e:
-        logger.error("Database connection check failed", error=str(e))
+        logger.error(f"Database connection check failed with error: {e}")
         return False
 
 
@@ -133,5 +143,5 @@ async def close_database() -> None:
         logger.info("Closing database connections")
         await engine.dispose()
     except Exception as e:
-        logger.error("Error closing database connections")
-        raise RuntimeError("Failed to close database connections") from e
+        logger.error(f"Error closing database connections: {e}")
+        raise RuntimeError(DBErrorMessage.CLOSE_DATABASE_FAILED) from e

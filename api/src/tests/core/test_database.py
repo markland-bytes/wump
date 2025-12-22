@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy import text
 
 from app.core.database import (
+    DBErrorMessage,
     create_engine,
     get_db,
     check_database_connection,
@@ -44,7 +45,7 @@ class TestCreateEngine:
         with patch("app.core.database.settings") as mock_settings:
             mock_settings.database_url = ""
             
-            with pytest.raises(ValueError, match="DATABASE_URL is not configured"):
+            with pytest.raises(ValueError, match=DBErrorMessage.CREATE_ENGINE_NO_URL):
                 create_engine()
     
     def test_create_engine_invalid_pool_size(self) -> None:
@@ -53,7 +54,7 @@ class TestCreateEngine:
             mock_settings.database_url = "postgresql+asyncpg://localhost/db"
             mock_settings.database_pool_size = 0
             
-            with pytest.raises(ValueError, match="DATABASE_POOL_SIZE must be at least 1"):
+            with pytest.raises(ValueError, match=DBErrorMessage.CREATE_ENGINE_MIN_DB_POOL_SIZE):
                 create_engine()
     
     def test_create_engine_negative_max_overflow(self) -> None:
@@ -63,7 +64,7 @@ class TestCreateEngine:
             mock_settings.database_pool_size = 20
             mock_settings.database_max_overflow = -1
             
-            with pytest.raises(ValueError, match="DATABASE_MAX_OVERFLOW must be non-negative"):
+            with pytest.raises(ValueError, match=DBErrorMessage.CREATE_ENGINE_NEGATIVE_MAX_OVERFLOW):
                 create_engine()
     
     def test_create_engine_unexpected_error_masked(self) -> None:
@@ -76,7 +77,7 @@ class TestCreateEngine:
             with patch("app.core.database.create_async_engine") as mock_create:
                 mock_create.side_effect = RuntimeError("Unexpected DB driver error")
                 
-                with pytest.raises(ValueError, match="Failed to create database engine"):
+                with pytest.raises(ValueError, match=DBErrorMessage.CREATE_ENGINE_FAILED):
                     create_engine()
 
 
@@ -223,7 +224,7 @@ class TestCloseDatabase:
                 side_effect=Exception("Disposal error")
             )
             
-            with pytest.raises(RuntimeError, match="Failed to close database connections"):
+            with pytest.raises(RuntimeError, match=DBErrorMessage.CLOSE_DATABASE_FAILED):
                 await close_database()
     
     @pytest.mark.asyncio
@@ -234,7 +235,7 @@ class TestCloseDatabase:
                 side_effect=ConnectionError("Already disconnected")
             )
             
-            with pytest.raises(RuntimeError, match="Failed to close database connections"):
+            with pytest.raises(RuntimeError, match=DBErrorMessage.CLOSE_DATABASE_FAILED):
                 await close_database()
 
 
