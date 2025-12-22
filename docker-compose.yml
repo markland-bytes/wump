@@ -1,12 +1,12 @@
 services:
   api:
     build:
-      context: .
+      context: ./api
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - .:/code
+      - ./api/src:/code/src
     environment:
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/wump
       - VALKEY_URL=redis://valkey:6379/0
@@ -14,11 +14,11 @@ services:
       - LOG_LEVEL=INFO
       - LOG_FORMAT=console
     env_file:
-      - .env
+      - ./api/.env
     depends_on:
       - db
       - valkey
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
 
   db:
     image: postgres:18-alpine
