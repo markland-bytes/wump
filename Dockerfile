@@ -18,10 +18,10 @@ COPY pyproject.toml README.md ./
 RUN uv pip install --system -e ".[dev]"
 
 # Copy application code
-COPY . .
+COPY src ./src
 
 # Expose port
 EXPOSE 8000
 
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

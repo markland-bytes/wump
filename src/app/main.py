@@ -5,8 +5,8 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import settings
-from app.core.logging import configure_logging, get_logger
+from src.app.core.config import settings
+from src.app.core.logging import configure_logging, get_logger
 
 # Configure logging on module import
 configure_logging()

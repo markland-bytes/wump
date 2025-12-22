@@ -5,7 +5,7 @@ import sys
 import structlog
 from structlog.types import EventDict, Processor
 
-from app.core.config import settings
+from src.app.core.config import settings
 
 
 def add_app_context(logger: logging.Logger, method_name: str, event_dict: EventDict) -> EventDict:
