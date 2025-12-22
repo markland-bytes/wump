@@ -2,6 +2,7 @@
 
 from typing import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -92,7 +93,7 @@ async def check_database_connection() -> bool:
     """
     try:
         async with engine.begin() as conn:
-            await conn.execute("SELECT 1")
+            await conn.execute(text("SELECT 1"))
         logger.debug("Database connection check passed")
         return True
     except Exception as e:
