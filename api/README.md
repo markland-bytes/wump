@@ -108,6 +108,72 @@ DATABASE_POOL_SIZE=20
 DATABASE_MAX_OVERFLOW=10
 ```
 
+### Database Migrations
+
+The project uses **Alembic** for version-controlled database schema management.
+
+#### Automatic Migrations (Docker Compose)
+
+When running with Docker Compose, migrations automatically execute on container startup:
+
+```bash
+docker compose up -d          # Migrations run automatically
+docker compose logs -f api    # See migration logs
+```
+
+#### Manual Migration Commands
+
+For local development or advanced scenarios, you can run migrations manually:
+
+```bash
+cd api
+
+# View migration history
+uv run alembic history
+
+# See current migration state
+uv run alembic current
+
+# Upgrade to latest migration
+uv run alembic upgrade head
+
+# Downgrade to previous migration
+uv run alembic downgrade -1
+
+# Downgrade to base (drop all tables)
+uv run alembic downgrade base
+```
+
+In Docker containers:
+
+```bash
+docker compose exec api python -m alembic upgrade head
+docker compose exec api python -m alembic history
+```
+
+#### Creating New Migrations
+
+When you modify SQLAlchemy models, create a new migration:
+
+1. Update your models in `src/app/models/`
+2. Create migration file (manual creation recommended):
+   ```bash
+   cd api
+   uv run alembic revision -m "Describe your changes"
+   ```
+3. Edit the generated file in `alembic/versions/`
+4. Test: `uv run alembic upgrade head`
+5. Commit both the models and migration files
+
+**Note**: Auto-generate (`--autogenerate`) is disabled due to async driver limitations. Always review generated migrations carefully and test thoroughly before committing.
+
+#### Migration Files
+
+All migrations are in `alembic/versions/` with naming: `{revision_id}_{description}.py`
+
+Current migrations:
+- `001_initial_schema.py` - Creates all base tables (organizations, packages, repositories, dependencies, api_keys)
+
 ### Health Check
 
 The `/health` endpoint includes database connectivity status:
