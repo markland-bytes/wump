@@ -87,9 +87,53 @@ See `.env.example` for all available variables. Key settings:
 
 ```env
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/wump
+DATABASE_POOL_SIZE=20              # Connection pool size
+DATABASE_MAX_OVERFLOW=10           # Max overflow connections
 VALKEY_URL=redis://valkey:6379/0
 LOG_LEVEL=INFO
 ```
+
+### Database Connection Pool
+
+The API uses SQLAlchemy 2.0 async engine with configurable connection pooling:
+
+- **Pool Size**: Number of persistent connections (default: 20)
+- **Max Overflow**: Additional temporary connections when pool is exhausted (default: 10)
+- **Pool Pre-Ping**: Tests connections before using to prevent stale connections
+- **Pool Recycle**: Recycles connections after 1 hour to handle database timeout policies
+
+Configure these in your `.env`:
+```env
+DATABASE_POOL_SIZE=20
+DATABASE_MAX_OVERFLOW=10
+```
+
+### Health Check
+
+The `/health` endpoint includes database connectivity status:
+
+```bash
+curl http://localhost:8000/health
+
+{
+  "status": "healthy",
+  "service": "wump-api",
+  "version": "0.1.0",
+  "database": "healthy"
+}
+```
+
+If the database is unavailable:
+```json
+{
+  "status": "degraded",
+  "service": "wump-api",
+  "version": "0.1.0",
+  "database": "unhealthy"
+}
+```
+
+Use this endpoint for monitoring and alerting. If `database` is `"unhealthy"`, the API cannot fulfill requests requiring database access.
 
 ---
 
