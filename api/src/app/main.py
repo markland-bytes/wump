@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.core.database import close_database
+from app.core.database import check_database_connection, close_database
 from app.core.logging import configure_logging, get_logger
 
 # Configure logging on module import
@@ -54,12 +54,23 @@ def create_app() -> FastAPI:
 
     # Health check endpoint
     @app.get("/health", tags=["health"])
-    async def health_check() -> dict[str, str]:
-        """Basic health check endpoint."""
+    async def health_check() -> dict[str, str | bool]:
+        """Health check endpoint with database connectivity status.
+        
+        Returns 200 if service is healthy, 503 if database is unavailable.
+        """
+        db_healthy = await check_database_connection()
+        
+        status_code = "healthy" if db_healthy else "degraded"
+        
+        if not db_healthy:
+            logger.warning("Health check: database connection failed")
+        
         return {
-            "status": "healthy",
+            "status": status_code,
             "service": "wump-api",
             "version": "0.1.0",
+            "database": "healthy" if db_healthy else "unhealthy",
         }
 
     # TODO: Include API routers
