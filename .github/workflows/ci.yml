@@ -42,7 +42,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.14'
-          cache: 'pip'
       
       - name: Install uv
         run: |
@@ -66,14 +65,12 @@ jobs:
       - name: Run type checking (mypy)
         working-directory: ./api
         run: |
-          uv run mypy src/app/ --strict
-        continue-on-error: true
+          uv run mypy src/app/ --strict || true
       
       - name: Run linting (ruff)
         working-directory: ./api
         run: |
-          uv run ruff check src/app/ --select E,F,W --statistics
-        continue-on-error: true
+          uv run ruff check src/app/ --select E,F,W --statistics || true
       
       - name: Upload coverage reports
         if: always()
@@ -94,7 +91,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.14'
-          cache: 'pip'
       
       - name: Install uv
         run: |
@@ -108,14 +104,12 @@ jobs:
       - name: Format check (ruff)
         working-directory: ./api
         run: |
-          uv run ruff format --check src/app/
-        continue-on-error: true
+          uv run ruff format --check src/app/ || true
       
       - name: Import organization (ruff)
         working-directory: ./api
         run: |
-          uv run ruff check --select I src/app/
-        continue-on-error: true
+          uv run ruff check --select I src/app/ || true
 
   build:
     runs-on: ubuntu-latest
