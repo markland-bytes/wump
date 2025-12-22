@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.database import close_database
 from app.core.logging import configure_logging, get_logger
 
 # Configure logging on module import
@@ -19,7 +20,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     logger.info("Starting wump API", version="0.1.0", environment=settings.environment)
     
-    # TODO: Initialize database connection pool
     # TODO: Initialize Valkey/Redis connection
     # TODO: Initialize OpenTelemetry (if enabled)
     
@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     
     # Shutdown
     logger.info("Shutting down wump API")
-    # TODO: Close database connections
+    await close_database()
     # TODO: Close Valkey/Redis connections
 
 
