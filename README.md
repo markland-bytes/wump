@@ -150,13 +150,13 @@ uv run ruff check .
 uv run mypy app/
 ```
 
-## � Project Management
+## 📋 Project Management
 
 We use **GitHub Issues + Projects** for task management:
 - 📊 [Project Board](https://github.com/markland-bytes/wump/projects) - Current sprint and backlog
 - 🐛 [Issues](https://github.com/markland-bytes/wump/issues) - Bugs, features, and tasks
 
-## �📝 License
+## 📝 License
 
 MIT
 
