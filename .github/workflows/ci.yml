@@ -44,13 +44,11 @@ jobs:
           python-version: '3.14'
       
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
+        run: pip install uv
       
       - name: Install dependencies
         working-directory: ./api
-        run: |
-          uv sync --locked --all-extras
+        run: uv sync --locked --all-extras
       
       - name: Run pytest
         working-directory: ./api
@@ -59,8 +57,7 @@ jobs:
           VALKEY_URL: redis://localhost:6379/0
           ENVIRONMENT: testing
           LOG_LEVEL: WARNING
-        run: |
-          uv run pytest src/tests/ -v --tb=short --cov=src/app --cov-report=term-missing
+        run: uv run pytest src/tests/ -v --tb=short --cov=src/app --cov-report=term-missing
       
       - name: Run type checking (mypy)
         working-directory: ./api
@@ -93,18 +90,15 @@ jobs:
           python-version: '3.14'
       
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
+        run: pip install uv
       
       - name: Install dependencies
         working-directory: ./api
-        run: |
-          uv sync --locked --all-extras
+        run: uv sync --locked --all-extras
       
       - name: Format check (ruff)
         working-directory: ./api
-        run: |
-          uv run ruff format --check src/app/ || true
+        run: uv run ruff format --check src/app/ || true
       
       - name: Import organization (ruff)
         working-directory: ./api
