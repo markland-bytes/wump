@@ -1,11 +1,20 @@
 """API Key model for authentication and rate limiting."""
 
 from datetime import datetime
+from enum import Enum
 
-from sqlalchemy import DateTime, Index, Integer, String
+from sqlalchemy import DateTime, Enum as SQLEnum, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDMixin, generate_repr
+
+
+class TierEnum(str, Enum):
+    """API key tier levels."""
+
+    FREE = "free"
+    STANDARD = "standard"
+    PREMIUM = "premium"
 
 
 class APIKey(Base, UUIDMixin, TimestampMixin):
@@ -27,10 +36,9 @@ class APIKey(Base, UUIDMixin, TimestampMixin):
 
     key_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    tier: Mapped[str] = mapped_column(
-        String(20),
+    tier: Mapped[TierEnum] = mapped_column(
+        SQLEnum(TierEnum, native_enum=True),
         nullable=False,
-        comment="free, standard, premium",
     )
     rate_limit: Mapped[int] = mapped_column(Integer, nullable=False)
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)

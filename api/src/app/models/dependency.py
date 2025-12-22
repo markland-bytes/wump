@@ -2,9 +2,10 @@
 
 import uuid
 from datetime import datetime
+from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, func
+from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin, generate_repr
@@ -12,6 +13,14 @@ from app.models.base import Base, TimestampMixin, UUIDMixin, generate_repr
 if TYPE_CHECKING:
     from app.models.package import Package
     from app.models.repository import Repository
+
+
+class DependencyTypeEnum(str, Enum):
+    """Dependency type classification."""
+
+    DIRECT = "direct"
+    DEV = "dev"
+    PEER = "peer"
 
 
 class Dependency(Base, UUIDMixin, TimestampMixin):
@@ -41,10 +50,9 @@ class Dependency(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
     version: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    dependency_type: Mapped[str | None] = mapped_column(
-        String(20),
+    dependency_type: Mapped[DependencyTypeEnum | None] = mapped_column(
+        SQLEnum(DependencyTypeEnum, native_enum=True),
         nullable=True,
-        comment="direct, dev, peer",
     )
     detected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -53,11 +61,11 @@ class Dependency(Base, UUIDMixin, TimestampMixin):
     )
 
     # Relationships
-    repository: Mapped["Repository"] = relationship(
+    repository: Mapped[Repository] = relationship(
         "Repository",
         back_populates="dependencies",
     )
-    package: Mapped["Package"] = relationship(
+    package: Mapped[Package] = relationship(
         "Package",
         back_populates="dependencies",
     )

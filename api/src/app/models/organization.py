@@ -39,7 +39,7 @@ class Organization(Base, UUIDMixin, TimestampMixin):
     total_stars: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # Relationships
-    repositories: Mapped[list["Repository"]] = relationship(
+    repositories: Mapped[list[Repository]] = relationship(
         "Repository",
         back_populates="organization",
         cascade="all, delete-orphan",
