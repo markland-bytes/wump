@@ -3,6 +3,7 @@
 from typing import Any
 
 import redis.asyncio as redis
+from redis.asyncio import Redis
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -20,7 +21,7 @@ class CacheErrorMessage:
     CLOSE_CACHE_FAILED = "Failed to close cache connections"
 
 
-def create_client() -> Any:
+def create_client() -> Redis:
     """Create async Redis client with connection pooling.
 
     Returns:
@@ -47,7 +48,7 @@ def create_client() -> Any:
         )
 
         # Create connection pool with configuration
-        client: Any = redis.from_url(  # type: ignore[no-untyped-call]
+        client: Redis = redis.from_url(  # type: ignore[no-untyped-call]
             settings.valkey_url,
             encoding="utf-8",
             decode_responses=True,
