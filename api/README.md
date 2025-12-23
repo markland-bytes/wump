@@ -174,9 +174,61 @@ All migrations are in `alembic/versions/` with naming: `{revision_id}_{descripti
 Current migrations:
 - `001_initial_schema.py` - Creates all base tables (organizations, packages, repositories, dependencies, api_keys)
 
-### Health Check
+### Valkey/Redis Connection & Caching
 
-The `/health` endpoint includes database connectivity status:
+The API connects to **Valkey** (Redis-compatible cache) for performance optimization, rate limiting, and session management.
+
+#### Configuration
+
+Valkey connection is configured via environment variable:
+
+```env
+VALKEY_URL=redis://valkey:6379/0
+```
+
+In Docker Compose environments, the service name is `valkey`. For local development with a Redis instance on `localhost`:
+
+```env
+VALKEY_URL=redis://localhost:6379/0
+```
+
+#### Connection Pool
+
+The Valkey client uses an async connection pool for efficient resource management:
+
+- **Max Connections**: Maximum connections in the pool (default: 20)
+- **Socket Timeout**: 5 seconds (default connection timeout)
+- **Socket Keepalive**: Enabled to detect stale connections
+- **Health Check Interval**: 30 seconds (automatic health checks)
+
+#### Using Cache in Route Handlers
+
+Inject the cache client as a dependency in your route handlers:
+
+```python
+from fastapi import Depends, FastAPI
+from redis.asyncio import Redis
+from app.core.cache import get_cache
+
+app = FastAPI()
+
+@app.get("/cached-data")
+async def get_cached_data(cache: Redis = Depends(get_cache)):
+    """Get data from cache or compute if missing."""
+    # Get from cache
+    cached = await cache.get("data_key")
+    if cached:
+        return json.loads(cached)
+
+    # Compute and cache
+    data = {"key": "value"}
+    await cache.set("data_key", json.dumps(data), ex=3600)  # 1 hour TTL
+    return data
+```
+
+#### Cache Health Check
+
+The `/health` endpoint includes Valkey connectivity status:
 
 ```bash
 curl http://localhost:8000/health
@@ -185,21 +237,76 @@ curl http://localhost:8000/health
   "status": "healthy",
   "service": "wump-api",
   "version": "0.1.0",
-  "database": "healthy"
+  "database": "healthy",
+  "cache": "healthy"
 }
 ```
 
-If the database is unavailable:
+If Valkey is unavailable:
+
 ```json
 {
   "status": "degraded",
   "service": "wump-api",
   "version": "0.1.0",
-  "database": "unhealthy"
+  "database": "healthy",
+  "cache": "unhealthy"
 }
 ```
 
-Use this endpoint for monitoring and alerting. If `database` is `"unhealthy"`, the API cannot fulfill requests requiring database access.
+#### Testing Cache Connectivity
+
+From within a running container:
+
+```bash
+# Test Valkey connection
+docker compose exec api python -c "
+import asyncio
+from app.core.cache import check_cache_connection
+
+result = asyncio.run(check_cache_connection())
+print(f'Cache connected: {result}')
+"
+
+# Connect to Valkey CLI
+docker compose exec valkey valkey-cli
+
+# Inside valkey-cli
+PING                 # Should return PONG
+SET test-key value
+GET test-key
+FLUSHALL             # Clear all cache data
+QUIT
+```
+
+### Health Check
+
+The `/health` endpoint includes database and cache connectivity status:
+
+```bash
+curl http://localhost:8000/health
+
+{
+  "status": "healthy",
+  "service": "wump-api",
+  "version": "0.1.0",
+  "database": "healthy",
+  "cache": "healthy"
+}
+```
+
+If services are unavailable:
+```json
+{
+  "status": "degraded",
+  "service": "wump-api",
+  "version": "0.1.0",
+  "database": "unhealthy",
+  "cache": "unhealthy"
+}
+```
+
+Use this endpoint for monitoring and alerting. If `database` or `cache` is `"unhealthy"`, the API may have limited functionality.
 
 ---
 
