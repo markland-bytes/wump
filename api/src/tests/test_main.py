@@ -3,19 +3,25 @@ import time
 from unittest.mock import AsyncMock, patch
 
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
 
 
-@pytest.mark.asyncio
-async def test_health_check() -> None:
-    """Test the health check endpoint."""
+@pytest_asyncio.fixture
+async def async_client() -> AsyncClient:  # type: ignore[return]
+    """Yields an AsyncClient for making async requests to the FastAPI app."""
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+        transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        response = await client.get("/health")
+        yield client
+
+
+@pytest.mark.asyncio
+async def test_health_check(async_client: AsyncClient) -> None:
+    """Test the health check endpoint."""
+    response = await async_client.get("/health")
 
     assert response.status_code == 200
     data = response.json()
@@ -25,13 +31,9 @@ async def test_health_check() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_response_structure() -> None:
+async def test_health_check_response_structure(async_client: AsyncClient) -> None:
     """Test that health check response has correct structure."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/health")
+    response = await async_client.get("/health")
 
     assert response.status_code == 200
     data = response.json()
@@ -61,13 +63,9 @@ async def test_health_check_response_structure() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_response_values() -> None:
+async def test_health_check_response_values(async_client: AsyncClient) -> None:
     """Test that health check response contains expected values."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/health")
+    response = await async_client.get("/health")
 
     data = response.json()
 
@@ -83,13 +81,9 @@ async def test_health_check_response_values() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_timestamps_iso8601() -> None:
+async def test_health_check_timestamps_iso8601(async_client: AsyncClient) -> None:
     """Test that timestamps are in ISO 8601 format."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/health")
+    response = await async_client.get("/health")
 
     data = response.json()
 
@@ -100,13 +94,9 @@ async def test_health_check_timestamps_iso8601() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_response_time_tracking() -> None:
+async def test_health_check_response_time_tracking(async_client: AsyncClient) -> None:
     """Test that response times are tracked for each service."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/health")
+    response = await async_client.get("/health")
 
     data = response.json()
 
@@ -121,13 +111,9 @@ async def test_health_check_response_time_tracking() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_all_healthy() -> None:
+async def test_health_check_all_healthy(async_client: AsyncClient) -> None:
     """Test health check when all services are healthy."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/health")
+    response = await async_client.get("/health")
 
     assert response.status_code == 200
     data = response.json()
@@ -139,16 +125,14 @@ async def test_health_check_all_healthy() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_database_unhealthy_returns_degraded() -> None:
+async def test_health_check_database_unhealthy_returns_degraded(
+    async_client: AsyncClient,
+) -> None:
     """Test health check returns degraded when database is unhealthy."""
-    with patch('app.main.check_database_connection', new_callable=AsyncMock) as mock_db:
+    with patch("app.main.check_database_connection", new_callable=AsyncMock) as mock_db:
         mock_db.return_value = False
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
-        ) as client:
-            response = await client.get("/health")
+        response = await async_client.get("/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -158,16 +142,12 @@ async def test_health_check_database_unhealthy_returns_degraded() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_cache_unhealthy_returns_degraded() -> None:
+async def test_health_check_cache_unhealthy_returns_degraded(async_client: AsyncClient) -> None:
     """Test health check returns degraded when cache is unhealthy."""
-    with patch('app.main.check_cache_connection', new_callable=AsyncMock) as mock_cache:
+    with patch("app.main.check_cache_connection", new_callable=AsyncMock) as mock_cache:
         mock_cache.return_value = False
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
-        ) as client:
-            response = await client.get("/health")
+        response = await async_client.get("/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -177,19 +157,18 @@ async def test_health_check_cache_unhealthy_returns_degraded() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_both_unhealthy_returns_degraded() -> None:
+async def test_health_check_both_unhealthy_returns_degraded(async_client: AsyncClient) -> None:
     """Test health check returns degraded when both services are unhealthy."""
-    with patch('app.main.check_database_connection', new_callable=AsyncMock) as mock_db, \
-         patch('app.main.check_cache_connection', new_callable=AsyncMock) as mock_cache:
+    with patch(
+        "app.main.check_database_connection", new_callable=AsyncMock
+    ) as mock_db, patch(
+        "app.main.check_cache_connection", new_callable=AsyncMock
+    ) as mock_cache:
 
         mock_db.return_value = False
         mock_cache.return_value = False
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
-        ) as client:
-            response = await client.get("/health")
+        response = await async_client.get("/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -200,33 +179,28 @@ async def test_health_check_both_unhealthy_returns_degraded() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_always_returns_200() -> None:
+async def test_health_check_always_returns_200(async_client: AsyncClient) -> None:
     """Test that health check endpoint always returns 200 status code."""
     # Even when services are unhealthy, we return 200 (the response body indicates degraded status)
-    with patch('app.main.check_database_connection', new_callable=AsyncMock) as mock_db, \
-         patch('app.main.check_cache_connection', new_callable=AsyncMock) as mock_cache:
+    with patch(
+        "app.main.check_database_connection", new_callable=AsyncMock
+    ) as mock_db, patch(
+        "app.main.check_cache_connection", new_callable=AsyncMock
+    ) as mock_cache:
 
         mock_db.return_value = False
         mock_cache.return_value = False
 
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
-        ) as client:
-            response = await client.get("/health")
+        response = await async_client.get("/health")
 
         # The endpoint always returns 200, status field indicates degradation
         assert response.status_code == 200
 
 
 @pytest.mark.asyncio
-async def test_health_check_response_is_json() -> None:
+async def test_health_check_response_is_json(async_client: AsyncClient) -> None:
     """Test that health check response is valid JSON."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/health")
+    response = await async_client.get("/health")
 
     assert response.status_code == 200
 
@@ -236,15 +210,11 @@ async def test_health_check_response_is_json() -> None:
 
 
 @pytest.mark.asyncio
-async def test_health_check_response_time_reasonable() -> None:
+async def test_health_check_response_time_reasonable(async_client: AsyncClient) -> None:
     """Test that health check completes in reasonable time."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        start = time.time()
-        response = await client.get("/health")
-        elapsed = time.time() - start
+    start = time.time()
+    response = await async_client.get("/health")
+    elapsed = time.time() - start
 
     assert response.status_code == 200
     # Health check should complete in under 5 seconds
@@ -252,25 +222,17 @@ async def test_health_check_response_time_reasonable() -> None:
 
 
 @pytest.mark.asyncio
-async def test_docs_accessible() -> None:
+async def test_docs_accessible(async_client: AsyncClient) -> None:
     """Test that API documentation is accessible."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/docs")
+    response = await async_client.get("/docs")
 
     assert response.status_code == 200
 
 
 @pytest.mark.asyncio
-async def test_openapi_schema() -> None:
+async def test_openapi_schema(async_client: AsyncClient) -> None:
     """Test that OpenAPI schema is accessible."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
-        response = await client.get("/openapi.json")
+    response = await async_client.get("/openapi.json")
 
     assert response.status_code == 200
     schema = response.json()
