@@ -1,5 +1,6 @@
 """Tests for request ID middleware."""
 import uuid
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -23,7 +24,7 @@ class TestRequestIDMiddleware:
             return {"message": "test", "request_id": get_request_id()}
 
         @app.post("/echo")
-        async def echo_endpoint(request: Request) -> dict[str, str | dict]:
+        async def echo_endpoint(request: Request) -> dict[str, Any]:
             body = await request.json()
             return {"echoed": body, "request_id": get_request_id()}
 
