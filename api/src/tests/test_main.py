@@ -140,7 +140,7 @@ async def test_health_check_all_healthy() -> None:
 @pytest.mark.asyncio
 async def test_health_check_database_unhealthy_returns_degraded() -> None:
     """Test health check returns degraded when database is unhealthy."""
-    with patch('app.core.database.check_database_connection', new_callable=AsyncMock) as mock_db:
+    with patch('app.main.check_database_connection', new_callable=AsyncMock) as mock_db:
         mock_db.return_value = False
         
         async with AsyncClient(
@@ -159,7 +159,7 @@ async def test_health_check_database_unhealthy_returns_degraded() -> None:
 @pytest.mark.asyncio
 async def test_health_check_cache_unhealthy_returns_degraded() -> None:
     """Test health check returns degraded when cache is unhealthy."""
-    with patch('app.core.cache.check_cache_connection', new_callable=AsyncMock) as mock_cache:
+    with patch('app.main.check_cache_connection', new_callable=AsyncMock) as mock_cache:
         mock_cache.return_value = False
         
         async with AsyncClient(
@@ -178,8 +178,8 @@ async def test_health_check_cache_unhealthy_returns_degraded() -> None:
 @pytest.mark.asyncio
 async def test_health_check_both_unhealthy_returns_degraded() -> None:
     """Test health check returns degraded when both services are unhealthy."""
-    with patch('app.core.database.check_database_connection', new_callable=AsyncMock) as mock_db, \
-         patch('app.core.cache.check_cache_connection', new_callable=AsyncMock) as mock_cache:
+    with patch('app.main.check_database_connection', new_callable=AsyncMock) as mock_db, \
+         patch('app.main.check_cache_connection', new_callable=AsyncMock) as mock_cache:
         
         mock_db.return_value = False
         mock_cache.return_value = False
@@ -202,8 +202,8 @@ async def test_health_check_both_unhealthy_returns_degraded() -> None:
 async def test_health_check_always_returns_200() -> None:
     """Test that health check endpoint always returns 200 status code."""
     # Even when services are unhealthy, we return 200 (the response body indicates degraded status)
-    with patch('app.core.database.check_database_connection', new_callable=AsyncMock) as mock_db, \
-         patch('app.core.cache.check_cache_connection', new_callable=AsyncMock) as mock_cache:
+    with patch('app.main.check_database_connection', new_callable=AsyncMock) as mock_db, \
+         patch('app.main.check_cache_connection', new_callable=AsyncMock) as mock_cache:
         
         mock_db.return_value = False
         mock_cache.return_value = False

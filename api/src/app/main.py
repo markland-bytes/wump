@@ -1,7 +1,7 @@
 """FastAPI application factory and main entry point."""
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 from typing import Any
 
@@ -74,13 +74,13 @@ def create_app() -> FastAPI:
         db_start = time.time()
         db_healthy = await check_database_connection()
         db_response_time = round((time.time() - db_start) * 1000, 2)
-        db_timestamp = datetime.utcnow().isoformat() + "Z"
+        db_timestamp = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
         
         # Check cache with timing
         cache_start = time.time()
         cache_healthy = await check_cache_connection()
         cache_response_time = round((time.time() - cache_start) * 1000, 2)
-        cache_timestamp = datetime.utcnow().isoformat() + "Z"
+        cache_timestamp = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
         # Determine overall status
         overall_healthy = db_healthy and cache_healthy
@@ -101,7 +101,7 @@ def create_app() -> FastAPI:
             "status": overall_status,
             "service": "wump-api",
             "version": "0.1.0",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
             "checks": {
                 "database": {
                     "status": "healthy" if db_healthy else "unhealthy",
