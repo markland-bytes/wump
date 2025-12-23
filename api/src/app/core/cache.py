@@ -3,12 +3,15 @@
 from typing import Any
 
 import redis.asyncio as redis
+from opentelemetry.trace.status import Status, StatusCode
 from redis.asyncio import Redis
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import create_span, get_tracer
 
 logger = get_logger(__name__)
+tracer = get_tracer(__name__)
 
 
 class CacheErrorMessage:
@@ -106,13 +109,19 @@ async def check_cache_connection() -> bool:
     Returns:
         bool: True if connection successful, False otherwise
     """
-    try:
-        await cache_client.ping()
-        logger.debug("Cache connection check passed")
-        return True
-    except Exception as e:
-        logger.error(f"Cache connection check failed with error: {e}")
-        return False
+    with create_span(tracer, "cache.check_connection") as span:
+        try:
+            await cache_client.ping()
+            logger.debug("Cache connection check passed")
+            span.set_status(Status(StatusCode.OK))
+            span.set_attribute("cache.connection.status", "healthy")
+            return True
+        except Exception as e:
+            logger.error(f"Cache connection check failed with error: {e}")
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.set_attribute("cache.connection.status", "unhealthy")
+            return False
 
 
 async def close_cache() -> None:
@@ -123,11 +132,17 @@ async def close_cache() -> None:
     Raises:
         RuntimeError: If graceful shutdown fails
     """
-    try:
-        logger.info("Closing cache connections")
-        await cache_client.close()
-        # Wait for connection pool to be cleaned up
-        await cache_client.connection_pool.disconnect()
-    except Exception as e:
-        logger.error(f"Error closing cache connections: {e}")
-        raise RuntimeError(CacheErrorMessage.CLOSE_CACHE_FAILED) from e
+    with create_span(tracer, "cache.close_connections") as span:
+        try:
+            logger.info("Closing cache connections")
+            await cache_client.close()
+            # Wait for connection pool to be cleaned up
+            await cache_client.connection_pool.disconnect()
+            span.set_status(Status(StatusCode.OK))
+            span.set_attribute("cache.operation", "close_connections")
+        except Exception as e:
+            logger.error(f"Error closing cache connections: {e}")
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.set_attribute("cache.operation", "close_connections")
+            raise RuntimeError(CacheErrorMessage.CLOSE_CACHE_FAILED) from e

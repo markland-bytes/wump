@@ -3,6 +3,7 @@
 import asyncio
 from typing import AsyncGenerator
 
+from opentelemetry.trace.status import Status, StatusCode
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -13,8 +14,10 @@ from sqlalchemy.ext.asyncio import (
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import create_span, get_tracer
 
 logger = get_logger(__name__)
+tracer = get_tracer(__name__)
 
 class DBErrorMessage:
     """Standardized database error messages."""
@@ -122,14 +125,20 @@ async def check_database_connection() -> bool:
     Returns:
         bool: True if connection successful, False otherwise
     """
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("SELECT 1"))
-        logger.debug("Database connection check passed")
-        return True
-    except Exception as e:
-        logger.error(f"Database connection check failed with error: {e}")
-        return False
+    with create_span(tracer, "database.check_connection") as span:
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text("SELECT 1"))
+            logger.debug("Database connection check passed")
+            span.set_status(Status(StatusCode.OK))
+            span.set_attribute("db.connection.status", "healthy")
+            return True
+        except Exception as e:
+            logger.error(f"Database connection check failed with error: {e}")
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.set_attribute("db.connection.status", "unhealthy")
+            return False
 
 
 async def close_database() -> None:
@@ -140,12 +149,18 @@ async def close_database() -> None:
     Raises:
         RuntimeError: If graceful shutdown fails (connection closure is attempted once)
     """
-    try:
-        logger.info("Closing database connections")
-        await engine.dispose()
-        # Allow asyncpg to clean up pending cancellation tasks.
-        # This prevents RuntimeWarning about unawaited coroutines.
-        await asyncio.sleep(0.25)
-    except Exception as e:
-        logger.error(f"Error closing database connections: {e}")
-        raise RuntimeError(DBErrorMessage.CLOSE_DATABASE_FAILED) from e
+    with create_span(tracer, "database.close_connections") as span:
+        try:
+            logger.info("Closing database connections")
+            await engine.dispose()
+            # Allow asyncpg to clean up pending cancellation tasks.
+            # This prevents RuntimeWarning about unawaited coroutines.
+            await asyncio.sleep(0.25)
+            span.set_status(Status(StatusCode.OK))
+            span.set_attribute("db.operation", "close_connections")
+        except Exception as e:
+            logger.error(f"Error closing database connections: {e}")
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.set_attribute("db.operation", "close_connections")
+            raise RuntimeError(DBErrorMessage.CLOSE_DATABASE_FAILED) from e

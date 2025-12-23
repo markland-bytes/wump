@@ -13,9 +13,11 @@ from app.core.config import settings
 from app.core.database import check_database_connection, close_database
 from app.core.logging import configure_logging, get_logger
 from app.core.middleware import RequestIDMiddleware
+from app.core.tracing import configure_tracing, instrument_fastapi_app
 
-# Configure logging on module import
+# Configure logging and tracing on module import
 configure_logging()
+configure_tracing()
 logger = get_logger(__name__)
 
 
@@ -56,6 +58,9 @@ def create_app() -> FastAPI:
 
     # Add Request ID middleware for distributed tracing
     app.add_middleware(RequestIDMiddleware)
+
+    # Instrument FastAPI with OpenTelemetry (if enabled)
+    instrument_fastapi_app(app)
 
     # Health check endpoint
     @app.get("/health", tags=["health"], status_code=200)
