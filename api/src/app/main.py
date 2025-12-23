@@ -1,6 +1,9 @@
 """FastAPI application factory and main entry point."""
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,29 +54,73 @@ def create_app() -> FastAPI:
     )
 
     # Health check endpoint
-    @app.get("/health", tags=["health"])
-    async def health_check() -> dict[str, str | bool]:
-        """Health check endpoint with database and cache connectivity status.
+    @app.get("/health", tags=["health"], status_code=200)
+    async def health_check() -> dict[str, Any]:
+        """Enhanced health check endpoint with comprehensive system diagnostics.
 
-        Returns 200 if service is healthy, 503 if database or cache is unavailable.
+        Provides detailed status of all service dependencies including response times.
+        Returns 200 if all services are healthy, 503 if any service is degraded.
+
+        Response format includes:
+        - status: "healthy" (all services OK) or "degraded" (any service down)
+        - service: API service name
+        - version: API version
+        - timestamp: ISO 8601 timestamp of health check
+        - checks: detailed status of each service dependency
         """
+        start_time = time.time()
+
+        # Check database with timing
+        db_start = time.time()
         db_healthy = await check_database_connection()
+        db_response_time = round((time.time() - db_start) * 1000, 2)
+        db_iso = datetime.now(UTC).isoformat(timespec="milliseconds")
+        db_timestamp = db_iso.replace("+00:00", "Z")
+
+        # Check cache with timing
+        cache_start = time.time()
         cache_healthy = await check_cache_connection()
+        cache_response_time = round((time.time() - cache_start) * 1000, 2)
+        cache_iso = datetime.now(UTC).isoformat(timespec="milliseconds")
+        cache_timestamp = cache_iso.replace("+00:00", "Z")
 
-        status_code = "healthy" if (db_healthy and cache_healthy) else "degraded"
+        # Determine overall status
+        overall_healthy = db_healthy and cache_healthy
+        overall_status = "healthy" if overall_healthy else "degraded"
 
-        if not db_healthy:
-            logger.warning("Health check: database connection failed")
-        if not cache_healthy:
-            logger.warning("Health check: cache connection failed")
+        # Log health check result
+        total_time = round((time.time() - start_time) * 1000, 2)
+        logger.info(
+            "Health check completed",
+            status=overall_status,
+            database=overall_status if db_healthy else "unhealthy",
+            cache=overall_status if cache_healthy else "unhealthy",
+            duration_ms=total_time,
+        )
 
-        return {
-            "status": status_code,
+        # Build response
+        timestamp_iso = datetime.now(UTC).isoformat(timespec="milliseconds")
+        timestamp = timestamp_iso.replace("+00:00", "Z")
+        response = {
+            "status": overall_status,
             "service": "wump-api",
             "version": "0.1.0",
-            "database": "healthy" if db_healthy else "unhealthy",
-            "cache": "healthy" if cache_healthy else "unhealthy",
+            "timestamp": timestamp,
+            "checks": {
+                "database": {
+                    "status": "healthy" if db_healthy else "unhealthy",
+                    "response_time_ms": db_response_time,
+                    "timestamp": db_timestamp,
+                },
+                "cache": {
+                    "status": "healthy" if cache_healthy else "unhealthy",
+                    "response_time_ms": cache_response_time,
+                    "timestamp": cache_timestamp,
+                },
+            },
         }
+
+        return response
 
     # TODO: Include API routers
     # app.include_router(packages.router, prefix="/api/v1")

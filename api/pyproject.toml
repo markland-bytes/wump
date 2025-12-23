@@ -53,6 +53,9 @@ ignore = []
 testpaths = ["src/tests"]
 asyncio_mode = "auto"
 pythonpath = ["src"]
+filterwarnings = [
+    "ignore:coroutine 'Connection._cancel' was never awaited:RuntimeWarning",
+]
 
 [tool.mypy]
 python_version = "3.14"
