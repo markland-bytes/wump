@@ -1,8 +1,8 @@
 """FastAPI application factory and main entry point."""
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-import time
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import FastAPI
@@ -69,23 +69,25 @@ def create_app() -> FastAPI:
         - checks: detailed status of each service dependency
         """
         start_time = time.time()
-        
+
         # Check database with timing
         db_start = time.time()
         db_healthy = await check_database_connection()
         db_response_time = round((time.time() - db_start) * 1000, 2)
-        db_timestamp = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
-        
+        db_iso = datetime.now(UTC).isoformat(timespec="milliseconds")
+        db_timestamp = db_iso.replace("+00:00", "Z")
+
         # Check cache with timing
         cache_start = time.time()
         cache_healthy = await check_cache_connection()
         cache_response_time = round((time.time() - cache_start) * 1000, 2)
-        cache_timestamp = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+        cache_iso = datetime.now(UTC).isoformat(timespec="milliseconds")
+        cache_timestamp = cache_iso.replace("+00:00", "Z")
 
         # Determine overall status
         overall_healthy = db_healthy and cache_healthy
         overall_status = "healthy" if overall_healthy else "degraded"
-        
+
         # Log health check result
         total_time = round((time.time() - start_time) * 1000, 2)
         logger.info(
@@ -97,11 +99,13 @@ def create_app() -> FastAPI:
         )
 
         # Build response
+        timestamp_iso = datetime.now(UTC).isoformat(timespec="milliseconds")
+        timestamp = timestamp_iso.replace("+00:00", "Z")
         response = {
             "status": overall_status,
             "service": "wump-api",
             "version": "0.1.0",
-            "timestamp": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+            "timestamp": timestamp,
             "checks": {
                 "database": {
                     "status": "healthy" if db_healthy else "unhealthy",
@@ -115,7 +119,7 @@ def create_app() -> FastAPI:
                 },
             },
         }
-        
+
         return response
 
     # TODO: Include API routers
