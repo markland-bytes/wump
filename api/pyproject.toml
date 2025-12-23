@@ -53,6 +53,8 @@ ignore = []
 testpaths = ["src/tests"]
 asyncio_mode = "auto"
 pythonpath = ["src"]
+# Suppress asyncpg connection pool cleanup warnings
+addopts = "-W ignore:coroutine 'Connection._cancel' was never awaited:RuntimeWarning"
 
 [tool.mypy]
 python_version = "3.14"

@@ -1,5 +1,6 @@
 """Database connection management with async SQLAlchemy."""
 
+import asyncio
 from typing import AsyncGenerator
 
 from sqlalchemy import text
@@ -133,15 +134,18 @@ async def check_database_connection() -> bool:
 
 async def close_database() -> None:
     """Close all database connections.
-    
+
     Should be called during application shutdown.
-    
+
     Raises:
         RuntimeError: If graceful shutdown fails (connection closure is attempted once)
     """
     try:
         logger.info("Closing database connections")
         await engine.dispose()
+        # Allow asyncpg to clean up pending cancellation tasks.
+        # This prevents RuntimeWarning about unawaited coroutines.
+        await asyncio.sleep(0.25)
     except Exception as e:
         logger.error(f"Error closing database connections: {e}")
         raise RuntimeError(DBErrorMessage.CLOSE_DATABASE_FAILED) from e
