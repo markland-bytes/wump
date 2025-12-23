@@ -1,6 +1,6 @@
 """FastAPI application factory and main entry point."""
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,13 +16,13 @@ logger = get_logger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Application lifespan context manager for startup/shutdown events."""
     # Startup
     logger.info("Starting wump API", version="0.1.0", environment=settings.environment)
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down wump API")
     await close_database()
@@ -54,19 +54,19 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["health"])
     async def health_check() -> dict[str, str | bool]:
         """Health check endpoint with database and cache connectivity status.
-        
+
         Returns 200 if service is healthy, 503 if database or cache is unavailable.
         """
         db_healthy = await check_database_connection()
         cache_healthy = await check_cache_connection()
-        
+
         status_code = "healthy" if (db_healthy and cache_healthy) else "degraded"
-        
+
         if not db_healthy:
             logger.warning("Health check: database connection failed")
         if not cache_healthy:
             logger.warning("Health check: cache connection failed")
-        
+
         return {
             "status": status_code,
             "service": "wump-api",
@@ -80,7 +80,7 @@ def create_app() -> FastAPI:
     # app.include_router(organizations.router, prefix="/api/v1")
 
     logger.info("FastAPI application created", cors_origins=settings.cors_origins_list)
-    
+
     return app
 
 
@@ -90,7 +90,7 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "app.main:app",
         host=settings.api_host,

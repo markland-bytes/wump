@@ -3,8 +3,6 @@
 from typing import Any
 
 import redis.asyncio as redis
-from redis.asyncio import Redis
-from redis.connection import ConnectionPool
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -22,15 +20,15 @@ class CacheErrorMessage:
     CLOSE_CACHE_FAILED = "Failed to close cache connections"
 
 
-def create_client() -> Redis[bytes]:
+def create_client() -> Any:
     """Create async Redis client with connection pooling.
 
     Returns:
-        Redis[bytes]: Configured async Redis client
+        Redis: Configured async Redis client
 
     Connection Pool Configuration:
         - max_connections: Maximum connections in the pool (default: 20)
-        - decode_responses: Whether to decode responses (False for bytes)
+        - decode_responses: Whether to decode responses (True for string)
         - socket_connect_timeout: Timeout for socket connection (default: 5s)
         - socket_keepalive: Enable TCP keepalive (True)
         - health_check_interval: Health check interval (30s)
@@ -49,7 +47,7 @@ def create_client() -> Redis[bytes]:
         )
 
         # Create connection pool with configuration
-        client = redis.from_url(
+        client: Any = redis.from_url(  # type: ignore[no-untyped-call]
             settings.valkey_url,
             encoding="utf-8",
             decode_responses=True,
@@ -70,14 +68,14 @@ def create_client() -> Redis[bytes]:
 
 
 # Create client instance
-cache_client: Redis[Any] = create_client()
+cache_client: Any = create_client()
 
 
-async def get_cache() -> Redis[Any]:
+async def get_cache() -> Any:
     """FastAPI dependency for cache access.
 
     Returns:
-        Redis[Any]: Cache client for route handlers
+        Redis: Cache client for route handlers
 
     Raises:
         RuntimeError: If cache client cannot be accessed
