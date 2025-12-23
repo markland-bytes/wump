@@ -5,6 +5,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.cache import check_cache_connection, close_cache
 from app.core.config import settings
 from app.core.database import check_database_connection, close_database
 from app.core.logging import configure_logging, get_logger
@@ -20,15 +21,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     logger.info("Starting wump API", version="0.1.0", environment=settings.environment)
     
-    # TODO: Initialize Valkey/Redis connection
-    # TODO: Initialize OpenTelemetry (if enabled)
-    
     yield
     
     # Shutdown
     logger.info("Shutting down wump API")
     await close_database()
-    # TODO: Close Valkey/Redis connections
+    await close_cache()
 
 
 def create_app() -> FastAPI:
@@ -55,22 +53,26 @@ def create_app() -> FastAPI:
     # Health check endpoint
     @app.get("/health", tags=["health"])
     async def health_check() -> dict[str, str | bool]:
-        """Health check endpoint with database connectivity status.
+        """Health check endpoint with database and cache connectivity status.
         
-        Returns 200 if service is healthy, 503 if database is unavailable.
+        Returns 200 if service is healthy, 503 if database or cache is unavailable.
         """
         db_healthy = await check_database_connection()
+        cache_healthy = await check_cache_connection()
         
-        status_code = "healthy" if db_healthy else "degraded"
+        status_code = "healthy" if (db_healthy and cache_healthy) else "degraded"
         
         if not db_healthy:
             logger.warning("Health check: database connection failed")
+        if not cache_healthy:
+            logger.warning("Health check: cache connection failed")
         
         return {
             "status": status_code,
             "service": "wump-api",
             "version": "0.1.0",
             "database": "healthy" if db_healthy else "unhealthy",
+            "cache": "healthy" if cache_healthy else "unhealthy",
         }
 
     # TODO: Include API routers
