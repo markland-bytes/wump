@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     log_format: str = "json"
 
     # OpenTelemetry
-    otel_enabled: bool = False
-    otel_exporter_otlp_endpoint: str = "http://localhost:4317"
+    otel_enabled: bool = True
+    otel_exporter_otlp_endpoint: str = "http://jaeger:4317"
     otel_service_name: str = "wump-api"
 
     @property
