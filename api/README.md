@@ -228,31 +228,7 @@ async def get_cached_data(cache: Redis = Depends(get_cache)):
 
 #### Cache Health Check
 
-The `/health` endpoint includes Valkey connectivity status:
-
-```bash
-curl http://localhost:8000/health
-
-{
-  "status": "healthy",
-  "service": "wump-api",
-  "version": "0.1.0",
-  "database": "healthy",
-  "cache": "healthy"
-}
-```
-
-If Valkey is unavailable:
-
-```json
-{
-  "status": "degraded",
-  "service": "wump-api",
-  "version": "0.1.0",
-  "database": "healthy",
-  "cache": "unhealthy"
-}
-```
+The `/health` endpoint includes Valkey connectivity status. See the [Health Check](#health-check) section for detailed response format and examples.
 
 #### Testing Cache Connectivity
 
@@ -281,7 +257,11 @@ QUIT
 
 ### Health Check
 
-The `/health` endpoint includes database and cache connectivity status:
+The `/health` endpoint provides comprehensive system diagnostics including detailed status of service dependencies with response timing information.
+
+#### Healthy Response (200 OK)
+
+All services are operational:
 
 ```bash
 curl http://localhost:8000/health
@@ -290,23 +270,109 @@ curl http://localhost:8000/health
   "status": "healthy",
   "service": "wump-api",
   "version": "0.1.0",
-  "database": "healthy",
-  "cache": "healthy"
+  "timestamp": "2025-12-22T23:30:45.123Z",
+  "checks": {
+    "database": {
+      "status": "healthy",
+      "response_time_ms": 5.25,
+      "timestamp": "2025-12-22T23:30:45.100Z"
+    },
+    "cache": {
+      "status": "healthy",
+      "response_time_ms": 2.10,
+      "timestamp": "2025-12-22T23:30:45.120Z"
+    }
+  }
 }
 ```
 
-If services are unavailable:
+#### Degraded Response (200 OK with degraded status)
+
+One or more services are unavailable:
+
 ```json
 {
   "status": "degraded",
   "service": "wump-api",
   "version": "0.1.0",
-  "database": "unhealthy",
-  "cache": "unhealthy"
+  "timestamp": "2025-12-22T23:30:45.123Z",
+  "checks": {
+    "database": {
+      "status": "unhealthy",
+      "response_time_ms": 5001.50,
+      "timestamp": "2025-12-22T23:30:45.100Z"
+    },
+    "cache": {
+      "status": "healthy",
+      "response_time_ms": 2.10,
+      "timestamp": "2025-12-22T23:30:45.120Z"
+    }
+  }
 }
 ```
 
-Use this endpoint for monitoring and alerting. If `database` or `cache` is `"unhealthy"`, the API may have limited functionality.
+#### Response Format
+
+- **status**: `"healthy"` (all services OK) or `"degraded"` (any service down)
+- **service**: API service identifier
+- **version**: API version
+- **timestamp**: ISO 8601 UTC timestamp when health check was performed
+- **checks**: Object containing status of each service dependency
+  - **database**: PostgreSQL connectivity status
+    - **status**: `"healthy"` or `"unhealthy"`
+    - **response_time_ms**: Time in milliseconds to check database connection
+    - **timestamp**: ISO 8601 UTC timestamp of database check
+  - **cache**: Valkey/Redis connectivity status
+    - **status**: `"healthy"` or `"unhealthy"`
+    - **response_time_ms**: Time in milliseconds to check cache connection
+    - **timestamp**: ISO 8601 UTC timestamp of cache check
+
+#### HTTP Status Code
+
+The `/health` endpoint always returns **200 OK**. The `status` field in the response body indicates whether the service is `"healthy"` or `"degraded"`.
+
+#### Kubernetes Liveness & Readiness Probes
+
+Configure Kubernetes probes to use the health check endpoint:
+
+```yaml
+# liveness: Restart pod if health check fails
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 30
+
+# readiness: Remove from service if health check indicates degraded
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+```
+
+Check the `status` field in your monitoring system:
+- If `status == "healthy"`: All dependencies operational
+- If `status == "degraded"`: One or more dependencies unavailable - investigate logs and service status
+
+#### Monitoring & Alerting
+
+Use the health check endpoint with your monitoring system:
+
+```bash
+# Every 30 seconds, check API health
+while true; do
+  curl -s http://localhost:8000/health | jq '.status'
+  sleep 30
+done
+```
+
+Example alert conditions:
+- Alert if `status` changes from `"healthy"` to `"degraded"`
+- Alert if response_time_ms exceeds threshold (e.g., > 100ms for database)
+- Alert if endpoint returns non-200 status code (indicates API crash)
 
 ---
 
