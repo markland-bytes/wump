@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     environment: str = "development"
 
     # Database
-    database_url: str
+    database_url: str = "sqlite+aiosqlite:///./test.db"
     database_pool_size: int = 20
     database_max_overflow: int = 10
 

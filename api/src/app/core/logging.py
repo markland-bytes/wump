@@ -55,4 +55,5 @@ def configure_logging() -> None:
 
 def get_logger(name: str | None = None) -> structlog.BoundLogger:
     """Get a configured logger instance."""
-    return structlog.get_logger(name)
+    logger: structlog.BoundLogger = structlog.get_logger(name)
+    return logger
