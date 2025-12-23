@@ -12,6 +12,7 @@ from app.core.cache import check_cache_connection, close_cache
 from app.core.config import settings
 from app.core.database import check_database_connection, close_database
 from app.core.logging import configure_logging, get_logger
+from app.core.middleware import RequestIDMiddleware
 
 # Configure logging on module import
 configure_logging()
@@ -52,6 +53,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Add Request ID middleware for distributed tracing
+    app.add_middleware(RequestIDMiddleware)
 
     # Health check endpoint
     @app.get("/health", tags=["health"], status_code=200)
