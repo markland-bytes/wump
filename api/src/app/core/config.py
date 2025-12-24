@@ -42,7 +42,8 @@ class Settings(BaseSettings):
 
     # OpenTelemetry
     otel_enabled: bool = True
-    otel_exporter_otlp_endpoint: str = "http://jaeger:4317"
+    otel_exporter_otlp_endpoint: str = "http://jaeger:4317"  # Docker service default; override via OTEL_EXPORTER_OTLP_ENDPOINT env var or copy .env.example to .env
+    otel_exporter_insecure: bool = False  # Secure by default; set to True for local development via OTEL_EXPORTER_INSECURE env var
     otel_service_name: str = "wump-api"
 
     @property

@@ -50,7 +50,7 @@ def configure_tracing() -> None:
     # Add OTLP exporter for Jaeger
     otlp_exporter = OTLPSpanExporter(
         endpoint=settings.otel_exporter_otlp_endpoint,
-        insecure=True,  # For development - should be configurable in production
+        insecure=settings.otel_exporter_insecure,
         headers={}
     )
     span_processor = BatchSpanProcessor(otlp_exporter)

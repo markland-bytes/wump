@@ -80,7 +80,11 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
                 # Update span with response information
                 span.set_attribute("http.status_code", response.status_code)
                 content_length = response.headers.get("content-length", "0")
-                span.set_attribute("http.response.size", len(content_length))
+                try:
+                    response_size = int(content_length) if content_length else 0
+                except (ValueError, TypeError):
+                    response_size = 0
+                span.set_attribute("http.response.size", response_size)
                 span.set_attribute("request.duration_ms", duration_ms)
 
                 # Set span status based on HTTP status code
