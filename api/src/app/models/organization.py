@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDMixin, generate_repr
+from app.models.base import Base, TimestampMixin, UUIDMixin, SoftDeleteMixin, generate_repr
 
 if TYPE_CHECKING:
     from app.models.repository import Repository
 
 
-class Organization(Base, UUIDMixin, TimestampMixin):
+class Organization(Base, UUIDMixin, TimestampMixin, SoftDeleteMixin):
     """Represents a GitHub organization or user.
     
     Attributes:
