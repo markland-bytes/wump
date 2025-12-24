@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import (
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import trace_database
 
 logger = get_logger(__name__)
 
@@ -114,6 +115,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         raise RuntimeError(DBErrorMessage.GET_DB_SESSION_FAILED) from e
 
 
+@trace_database()
 async def check_database_connection() -> bool:
     """Check if database connection is available.
     
@@ -132,6 +134,7 @@ async def check_database_connection() -> bool:
         return False
 
 
+@trace_database()
 async def close_database() -> None:
     """Close all database connections.
 

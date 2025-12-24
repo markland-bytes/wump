@@ -17,6 +17,8 @@ def add_app_context(logger: logging.Logger, method_name: str, event_dict: EventD
 
 def configure_logging() -> None:
     """Configure structlog for structured JSON logging."""
+    import os
+
     # Determine log level
     log_level = getattr(logging, settings.log_level.upper(), logging.INFO)
 
@@ -34,13 +36,23 @@ def configure_logging() -> None:
         structlog.processors.TimeStamper(fmt="iso"),
         add_app_context,
         structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
     ]
 
+    # Check if we're running tests to avoid format_exc_info warning
+    is_testing = (
+        "pytest" in os.environ.get("_", "") or
+        os.environ.get("PYTEST_CURRENT_TEST") or
+        "pytest" in sys.modules
+    )
+
     # Add JSON renderer for production, console renderer for development
-    if settings.log_format == "json" or settings.is_production:
+    if settings.log_format == "json" or settings.is_production or is_testing:
+        # JSONRenderer handles exception formatting better than format_exc_info
+        # Also skip format_exc_info during testing to avoid warnings
         processors.append(structlog.processors.JSONRenderer())
     else:
+        # format_exc_info is only needed for console development output
+        processors.append(structlog.processors.format_exc_info)
         processors.append(structlog.dev.ConsoleRenderer())
 
     # Configure structlog

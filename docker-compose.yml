@@ -13,11 +13,17 @@ services:
       - ENVIRONMENT=development
       - LOG_LEVEL=INFO
       - LOG_FORMAT=console
+      # OpenTelemetry configuration
+      - OTEL_ENABLED=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_EXPORTER_INSECURE=true
+      - OTEL_SERVICE_NAME=wump-api
     env_file:
       - ./api/.env
     depends_on:
       - db
       - valkey
+      - jaeger
     command: uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
 
   db:
@@ -44,6 +50,21 @@ services:
       - valkey_data:/data
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger HTTP collector
+      - "4317:4317"    # OTLP gRPC receiver
+      - "4318:4318"    # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:16686/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

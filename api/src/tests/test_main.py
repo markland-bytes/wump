@@ -1,5 +1,6 @@
 """Test basic application health."""
 import time
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -10,7 +11,7 @@ from app.main import app
 
 
 @pytest_asyncio.fixture
-async def async_client() -> AsyncClient:  # type: ignore[return]
+async def async_client() -> AsyncGenerator[AsyncClient, None]:
     """Yields an AsyncClient for making async requests to the FastAPI app."""
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"

@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.tracing import trace_cache
 
 logger = get_logger(__name__)
 
@@ -98,6 +99,7 @@ async def get_cache() -> Any:
         raise RuntimeError(CacheErrorMessage.GET_CACHE_FAILED) from e
 
 
+@trace_cache()
 async def check_cache_connection() -> bool:
     """Check if cache connection is available.
 
@@ -115,6 +117,7 @@ async def check_cache_connection() -> bool:
         return False
 
 
+@trace_cache()
 async def close_cache() -> None:
     """Close all cache connections.
 
