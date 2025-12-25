@@ -267,11 +267,11 @@ class BaseRepository(Generic[ModelType]):
                 raise HTTPException(404, "Organization not found")
         """
         try:
-            stmt = select(self.model).where(self.model.id == id)
+            stmt = select(self.model).where(self.model.id == id)  # type: ignore[attr-defined]
             
             # Filter out soft-deleted records unless explicitly requested
             if not include_deleted and hasattr(self.model, "deleted_at"):
-                stmt = stmt.where(self.model.deleted_at.is_(None))
+                stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
             
             result = await self.db.execute(stmt)
             instance = result.scalar_one_or_none()
@@ -325,7 +325,7 @@ class BaseRepository(Generic[ModelType]):
             # Update the record
             stmt = (
                 update(self.model)
-                .where(self.model.id == id)
+                .where(self.model.id == id)  # type: ignore[attr-defined]
                 .values(**data)
                 .returning(self.model)
             )
@@ -373,19 +373,19 @@ class BaseRepository(Generic[ModelType]):
             # Check if model supports soft delete
             if hasattr(self.model, "deleted_at"):
                 # Soft delete: set deleted_at timestamp
-                stmt = (
+                update_stmt = (
                     update(self.model)
-                    .where(self.model.id == id)
-                    .where(self.model.deleted_at.is_(None))
+                    .where(self.model.id == id)  # type: ignore[attr-defined]
+                    .where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
                     .values(deleted_at=func.now())
                 )
-                result = await self.db.execute(stmt)
-                deleted = result.rowcount > 0
+                result = await self.db.execute(update_stmt)
+                deleted = bool(result.rowcount > 0)  # type: ignore[attr-defined]
             else:
                 # Hard delete: physically remove record
-                stmt = delete(self.model).where(self.model.id == id)
-                result = await self.db.execute(stmt)
-                deleted = result.rowcount > 0
+                delete_stmt = delete(self.model).where(self.model.id == id)  # type: ignore[attr-defined]
+                result = await self.db.execute(delete_stmt)
+                deleted = bool(result.rowcount > 0)  # type: ignore[attr-defined]
             
             if deleted:
                 logger.info(
@@ -445,7 +445,7 @@ class BaseRepository(Generic[ModelType]):
             
             # Filter out soft-deleted records unless explicitly requested
             if not include_deleted and hasattr(self.model, "deleted_at"):
-                stmt = stmt.where(self.model.deleted_at.is_(None))
+                stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
             
             # Get total count
             count_stmt = select(func.count()).select_from(stmt.subquery())

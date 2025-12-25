@@ -22,6 +22,8 @@ Example Usage:
         return org
 """
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.organization import Organization
@@ -68,7 +70,7 @@ class OrganizationRepository:
         """
         self._base = BaseRepository(Organization, db)
 
-    async def create(self, data: dict) -> Organization:
+    async def create(self, data: dict[str, Any]) -> Organization:
         """Create a new organization.
         
         Args:
@@ -92,7 +94,7 @@ class OrganizationRepository:
         from uuid import UUID
         return await self._base.get(UUID(org_id) if isinstance(org_id, str) else org_id, include_deleted)
 
-    async def update(self, org_id: str, data: dict) -> Organization | None:
+    async def update(self, org_id: str, data: dict[str, Any]) -> Organization | None:
         """Update an organization.
         
         Args:
