@@ -61,11 +61,11 @@ class Dependency(Base, UUIDMixin, TimestampMixin):
     )
 
     # Relationships
-    repository: Mapped[Repository] = relationship(
+    repository: Mapped["Repository"] = relationship(
         "Repository",
         back_populates="dependencies",
     )
-    package: Mapped[Package] = relationship(
+    package: Mapped["Package"] = relationship(
         "Package",
         back_populates="dependencies",
     )

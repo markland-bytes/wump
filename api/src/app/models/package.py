@@ -37,7 +37,7 @@ class Package(Base, UUIDMixin, TimestampMixin):
     latest_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Relationships
-    dependencies: Mapped[list[Dependency]] = relationship(
+    dependencies: Mapped[list["Dependency"]] = relationship(
         "Dependency",
         back_populates="package",
         cascade="all, delete-orphan",

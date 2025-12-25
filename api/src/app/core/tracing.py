@@ -230,7 +230,7 @@ def trace_cache(operation: str | None = None) -> Callable[[F], F]:
 class _NoOpSpan:
     """No-op span for when tracing is disabled."""
 
-    def __enter__(self) -> _NoOpSpan:
+    def __enter__(self) -> "_NoOpSpan":
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:

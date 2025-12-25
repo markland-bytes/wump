@@ -46,11 +46,11 @@ class Repository(Base, UUIDMixin, TimestampMixin):
     primary_language: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Relationships
-    organization: Mapped[Organization] = relationship(
+    organization: Mapped["Organization"] = relationship(
         "Organization",
         back_populates="repositories",
     )
-    dependencies: Mapped[list[Dependency]] = relationship(
+    dependencies: Mapped[list["Dependency"]] = relationship(
         "Dependency",
         back_populates="repository",
         cascade="all, delete-orphan",
