@@ -71,4 +71,5 @@ valkey_data/
 # Private documentation and AI context
 .ai/
 docs/private/
+!docs/private/coding/
 *-private.md
