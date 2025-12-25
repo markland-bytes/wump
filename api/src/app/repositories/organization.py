@@ -1,37 +1,218 @@
-"""Example usage of BaseRepository with Organization model."""
+"""Repository for Organization entities with custom CRUD operations."""
 
-from typing import Optional
+from typing import Any, Optional, Union
+import uuid
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.models.organization import Organization
-from app.repositories.base import BaseRepository, PaginationParams
+from app.repositories.base import (
+    BaseRepository,
+    PaginationParams,
+    PaginatedResult,
+    RepositoryError,
+)
+
+logger = get_logger(__name__)
 
 
-class OrganizationRepository(BaseRepository[Organization]):
-    """Repository for Organization entities with custom methods."""
+class OrganizationRepository:
+    """Repository for Organization entities using composition pattern.
+    
+    Delegates standard CRUD operations to BaseRepository while providing
+    custom organization-specific methods.
+    
+    Args:
+        session: Async SQLAlchemy session
+        use_cache: Enable/disable caching (default: False)
+    """
     
     def __init__(self, session: AsyncSession, use_cache: bool = False) -> None:
-        super().__init__(session, Organization, use_cache=use_cache)
+        self._session = session
+        self._base_repo = BaseRepository(session, Organization, use_cache=use_cache)
+        self._logger = get_logger(f"{__name__}.OrganizationRepository")
+    
+    # ========== DELEGATED CRUD METHODS ==========
+    
+    async def create(self, **kwargs: Any) -> Organization:
+        """Create a new organization.
+        
+        Args:
+            **kwargs: Organization attributes
+            
+        Returns:
+            Created organization instance
+            
+        Raises:
+            ConflictError: If organization conflicts with existing data
+            RepositoryError: For other database errors
+        """
+        return await self._base_repo.create(**kwargs)
+    
+    async def get(
+        self, 
+        entity_id: Union[uuid.UUID, str, int], 
+        include_deleted: bool = False
+    ) -> Optional[Organization]:
+        """Get organization by ID.
+        
+        Args:
+            entity_id: Organization identifier
+            include_deleted: Include soft-deleted organizations
+            
+        Returns:
+            Organization instance or None if not found
+            
+        Raises:
+            RepositoryError: For database errors
+        """
+        return await self._base_repo.get(entity_id, include_deleted=include_deleted)
+    
+    async def get_or_404(
+        self, 
+        entity_id: Union[uuid.UUID, str, int], 
+        include_deleted: bool = False
+    ) -> Organization:
+        """Get organization by ID or raise NotFoundError.
+        
+        Args:
+            entity_id: Organization identifier
+            include_deleted: Include soft-deleted organizations
+            
+        Returns:
+            Organization instance
+            
+        Raises:
+            NotFoundError: If organization not found
+            RepositoryError: For database errors
+        """
+        return await self._base_repo.get_or_404(entity_id, include_deleted=include_deleted)
+    
+    async def update(
+        self, 
+        entity_id: Union[uuid.UUID, str, int], 
+        **kwargs: Any
+    ) -> Optional[Organization]:
+        """Update organization by ID.
+        
+        Args:
+            entity_id: Organization identifier
+            **kwargs: Attributes to update
+            
+        Returns:
+            Updated organization instance or None if not found
+            
+        Raises:
+            ConflictError: If update conflicts with existing data
+            RepositoryError: For other database errors
+        """
+        return await self._base_repo.update(entity_id, **kwargs)
+    
+    async def delete(
+        self, 
+        entity_id: Union[uuid.UUID, str, int], 
+        soft: bool = True
+    ) -> bool:
+        """Delete organization by ID.
+        
+        Args:
+            entity_id: Organization identifier
+            soft: Use soft delete (default) or hard delete
+            
+        Returns:
+            True if organization was deleted, False if not found
+            
+        Raises:
+            RepositoryError: For database errors
+        """
+        return await self._base_repo.delete(entity_id, soft=soft)
+    
+    async def list(
+        self, 
+        pagination: Optional[PaginationParams] = None,
+        include_deleted: bool = False
+    ) -> PaginatedResult[Organization]:
+        """List organizations with pagination.
+        
+        Args:
+            pagination: Pagination parameters (default: offset=0, limit=50)
+            include_deleted: Include soft-deleted organizations
+            
+        Returns:
+            Paginated result with organizations and metadata
+            
+        Raises:
+            RepositoryError: For database errors
+        """
+        return await self._base_repo.list(
+            pagination=pagination, 
+            include_deleted=include_deleted
+        )
+    
+    async def count(self, include_deleted: bool = False) -> int:
+        """Count total organizations.
+        
+        Args:
+            include_deleted: Include soft-deleted organizations
+            
+        Returns:
+            Total count of organizations
+            
+        Raises:
+            RepositoryError: For database errors
+        """
+        return await self._base_repo.count(include_deleted=include_deleted)
+    
+    async def commit(self) -> None:
+        """Commit the current transaction."""
+        return await self._base_repo.commit()
+    
+    async def rollback(self) -> None:
+        """Rollback the current transaction."""
+        return await self._base_repo.rollback()
+    
+    # ========== CUSTOM ORGANIZATION METHODS ==========
     
     async def get_by_name(self, name: str) -> Optional[Organization]:
-        """Get organization by name.
+        """Get organization by name (case-sensitive).
         
         Args:
             name: Organization name to search for
             
         Returns:
             Organization instance or None if not found
+            
+        Raises:
+            RepositoryError: For database errors
         """
-        from sqlalchemy import select
-        
         try:
+            self._logger.debug(
+                "Getting organization by name",
+                name=name
+            )
+            
             query = select(Organization).where(
                 Organization.name == name,
                 Organization.deleted_at.is_(None)  # Exclude soft-deleted
             )
             
             result = await self._session.execute(query)
-            return result.scalar_one_or_none()
+            org = result.scalar_one_or_none()
+            
+            if org:
+                self._logger.debug(
+                    "Organization found by name",
+                    name=name,
+                    org_id=org.id
+                )
+            else:
+                self._logger.debug(
+                    "Organization not found by name",
+                    name=name
+                )
+            
+            return org
             
         except Exception as e:
             self._logger.error(
@@ -39,113 +220,4 @@ class OrganizationRepository(BaseRepository[Organization]):
                 name=name,
                 error=str(e)
             )
-            return None
-
-
-# Example usage in FastAPI endpoints:
-"""
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.database import get_db
-
-@app.post("/organizations/", response_model=OrganizationSchema)
-async def create_organization(
-    org_data: CreateOrganizationSchema,
-    db: AsyncSession = Depends(get_db)
-):
-    repo = OrganizationRepository(db)
-    
-    try:
-        async with db.begin():  # Transaction context
-            organization = await repo.create(
-                name=org_data.name,
-                github_url=org_data.github_url,
-                description=org_data.description
-            )
-            await repo.commit()
-            return organization
-            
-    except ConflictError:
-        raise HTTPException(
-            status_code=409,
-            detail="Organization with this name already exists"
-        )
-    except RepositoryError as e:
-        await repo.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/organizations/{org_id}")
-async def get_organization(
-    org_id: UUID,
-    db: AsyncSession = Depends(get_db)
-):
-    repo = OrganizationRepository(db)
-    organization = await repo.get_or_404(org_id)
-    return organization
-
-
-@app.get("/organizations/")
-async def list_organizations(
-    offset: int = 0,
-    limit: int = 50,
-    db: AsyncSession = Depends(get_db)
-):
-    repo = OrganizationRepository(db)
-    pagination = PaginationParams(offset=offset, limit=limit)
-    
-    result = await repo.list(pagination=pagination)
-    
-    return {
-        "items": result.items,
-        "total": result.total,
-        "offset": result.offset,
-        "limit": result.limit,
-        "has_next": result.has_next,
-        "has_prev": result.has_prev
-    }
-
-
-@app.put("/organizations/{org_id}")
-async def update_organization(
-    org_id: UUID,
-    org_data: UpdateOrganizationSchema,
-    db: AsyncSession = Depends(get_db)
-):
-    repo = OrganizationRepository(db)
-    
-    try:
-        async with db.begin():
-            updated_org = await repo.update(org_id, **org_data.dict(exclude_unset=True))
-            if updated_org is None:
-                raise HTTPException(status_code=404, detail="Organization not found")
-            
-            await repo.commit()
-            return updated_org
-            
-    except RepositoryError as e:
-        await repo.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.delete("/organizations/{org_id}")
-async def delete_organization(
-    org_id: UUID,
-    hard_delete: bool = False,
-    db: AsyncSession = Depends(get_db)
-):
-    repo = OrganizationRepository(db)
-    
-    try:
-        async with db.begin():
-            deleted = await repo.delete(org_id, soft=not hard_delete)
-            if not deleted:
-                raise HTTPException(status_code=404, detail="Organization not found")
-            
-            await repo.commit()
-            return {"message": "Organization deleted successfully"}
-            
-    except RepositoryError as e:
-        await repo.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-"""
+            raise RepositoryError(f"Failed to get organization by name: {e}") from e
