@@ -465,7 +465,7 @@ class TestBaseRepository:
         repository = BaseRepository(mock_session, RepositoryTestModel, use_cache=True)
         assert repository._use_cache is True
     
-    def test_tracing_integration(self, repository: BaseRepository[TestModel]) -> None:
+    def test_tracing_integration(self, repository: BaseRepository[RepositoryTestModel]) -> None:
         """Test that OpenTelemetry tracing is integrated."""
         # Verify that the repository methods have the trace_database decorator
         # Check if the methods have the wrapped attribute or trace metadata
