@@ -1,32 +1,3 @@
-"""Base repository class with generic CRUD operations.
-
-This module implements a composition-based repository pattern that provides
-reusable database access operations (CRUD) for any SQLAlchemy model.
-
-Key Concepts:
-- COMPOSITION PATTERN: BaseRepository is injected as a dependency, not inherited
-- GENERIC TYPE SAFETY: Uses TypeVar[ModelType] for compile-time type checking
-- SOFT DELETE: Automatic filtering of deleted_at timestamps
-- PAGINATION: Built-in offset/limit with total count and has_next/has_prev flags
-- TRANSACTION SUPPORT: Explicit commit/rollback control for multi-step operations
-- TRACING: @trace_database decorators integrate with OpenTelemetry
-
-Usage Example:
-    from sqlalchemy.ext.asyncio import AsyncSession
-    from app.models.organization import Organization
-    
-    session: AsyncSession
-    repo = BaseRepository(session, Organization)
-    org = await repo.get(org_id)
-    orgs = await repo.list(pagination=PaginationParams(offset=0, limit=50))
-    new_org = await repo.create(name="My Org")
-    await repo.update(org_id, name="Updated Org")
-    await repo.delete(org_id, soft=True)  # Soft delete
-    await repo.commit()
-
-See app/repositories/organization.py for an example of composition pattern usage.
-"""
-
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Generic, Optional, TypeVar, Union, cast
@@ -79,12 +50,6 @@ class NotFoundError(RepositoryError):
     This exception indicates a lookup operation (get, get_or_404) did not
     find the requested entity. Applications can use this to return HTTP 404
     responses or set default values.
-    
-    Example:
-        try:
-            org = await repo.get_or_404(org_id)
-        except NotFoundError:
-            raise HTTPException(status_code=404, detail="Organization not found")
     """
     pass
 
@@ -95,12 +60,6 @@ class ConflictError(RepositoryError):
     Typically indicates a database constraint violation (unique, foreign key, etc.).
     This is useful for detecting duplicate keys or constraint violations in
     business logic.
-    
-    Example:
-        try:
-            org = await repo.create(name="Test")
-        except ConflictError as e:
-            raise HTTPException(status_code=409, detail="Organization already exists")
     """
     pass
 
@@ -122,12 +81,6 @@ class PaginationParams:
     Attributes:
         offset: Number of records to skip (default: 0, must be >= 0)
         limit: Number of records to return (default: 50, must be 1-1000)
-    
-    Example:
-        # Get records 100-150
-        pagination = PaginationParams(offset=100, limit=50)
-        result = await repo.list(pagination=pagination)
-        print(f"Page has {len(result.items)} items, total: {result.total}")
     
     Raises:
         ValueError: If offset is negative or limit is out of range
@@ -156,17 +109,6 @@ class PaginatedResult(Generic[ModelType]):
         limit: Current page limit
         has_next: Boolean indicating if more pages exist after this one
         has_prev: Boolean indicating if previous pages exist before this one
-    
-    Example:
-        result = await repo.list(pagination=PaginationParams(offset=0, limit=50))
-        
-        for item in result.items:
-            print(item)
-        
-        if result.has_next:
-            next_result = await repo.list(
-                pagination=PaginationParams(offset=result.offset + result.limit)
-            )
     """
     
     def __init__(
@@ -757,23 +699,6 @@ class BaseRepository(Generic[ModelType]):
     # ========================================================================
     # TRANSACTION MANAGEMENT
     # ========================================================================
-    
-    async def begin_transaction(self) -> None:
-        """Begin a new transaction (documentation only).
-        
-        Transaction management is typically handled via FastAPI dependency
-        injection or async context managers. This method documents the pattern.
-        
-        Example:
-            # Using async context manager (recommended)
-            async with session.begin():
-                await repo.create(name="Test")
-                await repo.update(id, status="active")
-                # Auto-committed on successful exit
-        """
-        # Transaction management is handled by the session
-        # This method is here for documentation and future extension
-        pass
     
     async def commit(self) -> None:
         """Commit the current transaction.
