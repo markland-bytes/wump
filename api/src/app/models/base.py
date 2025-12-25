@@ -37,6 +37,19 @@ class TimestampMixin:
         )
 
 
+class SoftDeleteMixin:
+    """Mixin that adds soft delete functionality with deleted_at timestamp."""
+
+    @declared_attr
+    def deleted_at(cls) -> Mapped[datetime | None]:
+        """Timestamp when the record was soft-deleted. None if not deleted."""
+        return mapped_column(
+            DateTime(timezone=True),
+            nullable=True,
+            default=None,
+        )
+
+
 class UUIDMixin:
     """Mixin that adds a UUID primary key."""
 
