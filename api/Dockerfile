@@ -21,8 +21,8 @@ COPY src ./src
 COPY alembic ./alembic
 COPY alembic.ini ./
 
-# Copy entrypoint script
-COPY entrypoint.sh ./
+# Copy entrypoint and test runner scripts
+COPY entrypoint.sh run_tests.py ./
 RUN chmod +x entrypoint.sh
 
 # Install dependencies using uv sync (includes all extras for dev tools)

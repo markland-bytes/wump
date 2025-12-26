@@ -5,9 +5,17 @@ import os
 from collections.abc import AsyncGenerator
 from typing import Any
 
+# Set test environment variables BEFORE any app imports
+# This ensures tracing and other features are disabled during app initialization
+os.environ["ENVIRONMENT"] = "testing"
+os.environ["LOG_LEVEL"] = "WARNING"
+os.environ["OTEL_ENABLED"] = "false"  # Disable OpenTelemetry to prevent background threads
+os.environ["VALKEY_URL"] = ""  # Prevent cache client creation at module load - tests use FakeRedis
+
 import pytest
 import pytest_asyncio
 import redis.asyncio as redis
+from fakeredis import FakeAsyncRedis
 from httpx import ASGITransport, AsyncClient
 from redis.asyncio import Redis
 from sqlalchemy import text
@@ -23,22 +31,26 @@ from app.main import app
 from app.models.base import Base
 
 
-# Override settings for testing
+# Additional test environment setup
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment() -> None:
-    """Setup test environment variables before any tests run."""
-    os.environ["ENVIRONMENT"] = "testing"
-    os.environ["LOG_LEVEL"] = "WARNING"
-    # Use separate database for testing (db index 1 for test isolation)
-    os.environ["VALKEY_URL"] = os.getenv("VALKEY_URL", "redis://localhost:6379/1")
+    """Setup additional test environment variables.
+
+    Note: Critical environment variables (ENVIRONMENT, LOG_LEVEL, OTEL_ENABLED)
+    are set at module level to ensure they're applied before app initialization.
+
+    VALKEY_URL is intentionally NOT set here - tests default to FakeRedis (in-memory).
+    Set VALKEY_URL environment variable to use real Redis/Valkey for testing.
+    """
+    pass
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+# @pytest.fixture(scope="session")
+# def event_loop():
+#     """Create an event loop for the test session."""
+#     loop = asyncio.get_event_loop_policy().new_event_loop()
+#     yield loop
+#     loop.close()
 
 
 @pytest.fixture(scope="session")
@@ -62,23 +74,35 @@ async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
     """Create test database engine for the session.
 
     Creates tables before tests and drops them after.
+    Uses SQLite in-memory database by default for test isolation.
 
     Yields:
         AsyncEngine: Test database engine
     """
-    # Use environment variable for test database URL
+    # Use SQLite in-memory for tests by default
+    # Can be overridden with DATABASE_URL environment variable (e.g., for PostgreSQL integration tests)
     database_url = os.getenv(
         "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/wump"
+        "sqlite+aiosqlite:///:memory:"
     )
 
-    engine = create_async_engine(
-        database_url,
-        echo=False,
-        pool_size=5,  # Smaller pool for tests
-        max_overflow=5,
-        pool_pre_ping=True,
-    )
+    # Configure engine based on database type
+    if database_url.startswith("sqlite"):
+        # SQLite doesn't use connection pooling the same way
+        engine = create_async_engine(
+            database_url,
+            echo=False,
+            connect_args={"check_same_thread": False},  # Required for SQLite with async
+        )
+    else:
+        # PostgreSQL or other databases
+        engine = create_async_engine(
+            database_url,
+            echo=False,
+            pool_size=5,  # Smaller pool for tests
+            max_overflow=5,
+            pool_pre_ping=True,
+        )
 
     # Create all tables
     async with engine.begin() as conn:
@@ -147,10 +171,18 @@ async def verify_test_database() -> bool:
     """
     database_url = os.getenv(
         "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/wump"
+        "sqlite+aiosqlite:///:memory:"
     )
 
-    engine = create_async_engine(database_url, echo=False)
+    # Configure engine based on database type
+    if database_url.startswith("sqlite"):
+        engine = create_async_engine(
+            database_url,
+            echo=False,
+            connect_args={"check_same_thread": False},
+        )
+    else:
+        engine = create_async_engine(database_url, echo=False)
 
     try:
         async with engine.begin() as conn:
@@ -169,20 +201,28 @@ async def verify_test_database() -> bool:
 async def test_cache() -> AsyncGenerator[Redis, None]:
     """Create test cache client.
 
-    Uses database index 1 for test isolation.
+    Uses FakeRedis (in-memory) by default for test isolation.
+    Can be overridden with VALKEY_URL environment variable for real Redis/Valkey testing.
 
     Yields:
-        Redis: Test cache client
+        Redis: Test cache client (FakeRedis or real Redis)
     """
-    cache_url = os.getenv("VALKEY_URL", "redis://localhost:6379/1")
+    cache_url = os.getenv("VALKEY_URL", None)
 
-    client: Redis = redis.from_url(  # type: ignore[no-untyped-call]
-        cache_url,
-        encoding="utf-8",
-        decode_responses=True,
-        max_connections=5,
-        socket_connect_timeout=5,
-    )
+    # Use FakeRedis by default (in-memory, no service needed)
+    if cache_url is None:
+        client: Redis = FakeAsyncRedis(
+            decode_responses=True,
+        )
+    else:
+        # Use real Redis/Valkey if URL is provided
+        client = redis.from_url(  # type: ignore[no-untyped-call]
+            cache_url,
+            encoding="utf-8",
+            decode_responses=True,
+            max_connections=5,
+            socket_connect_timeout=5,
+        )
 
     # Verify connection
     try:
