@@ -57,7 +57,7 @@ jobs:
           VALKEY_URL: redis://localhost:6379/0
           ENVIRONMENT: testing
           LOG_LEVEL: WARNING
-        run: uv run pytest src/tests/ -v --tb=short --cov=src/app --cov-report=term-missing
+        run: uv run pytest src/tests/ -v --tb=short --cov=src/app --cov-report=term-missing --cov-fail-under=80
       
       - name: Run type checking (mypy)
         working-directory: ./api
