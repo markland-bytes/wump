@@ -376,6 +376,260 @@ Example alert conditions:
 
 ---
 
+## 🧪 Testing
+
+The project uses **pytest** with async support for comprehensive testing of all API components.
+
+### Running Tests
+
+#### All Tests
+
+```bash
+cd api
+uv run pytest
+```
+
+#### With Coverage Report
+
+```bash
+uv run pytest --cov=src/app --cov-report=term-missing
+```
+
+The project enforces **>80% code coverage** threshold. Tests will fail if coverage drops below this level.
+
+#### Specific Test File
+
+```bash
+uv run pytest src/tests/test_main.py
+```
+
+#### Specific Test Function
+
+```bash
+uv run pytest src/tests/test_main.py::test_health_check
+```
+
+#### Verbose Mode
+
+```bash
+uv run pytest -v
+```
+
+#### With Detailed Output
+
+```bash
+uv run pytest -vv -s
+```
+
+### Test Structure
+
+```
+src/tests/
+├── conftest.py              # Shared fixtures
+├── factories.py             # Model factories
+├── test_main.py             # API endpoint tests
+├── test_middleware.py       # Middleware tests
+├── core/
+│   ├── test_database.py     # Database connection tests
+│   └── test_cache.py        # Cache connection tests
+└── repositories/
+    └── test_base.py         # Repository pattern tests
+```
+
+### Test Database
+
+Tests use the same PostgreSQL instance as development but with:
+- Separate database index for cache (database 1 instead of 0)
+- Tables created/dropped automatically per test session
+- Transactions rolled back after each test for isolation
+
+**Environment variables for testing:**
+
+```env
+ENVIRONMENT=testing
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/wump
+VALKEY_URL=redis://localhost:6379/1
+LOG_LEVEL=WARNING
+```
+
+### Using Fixtures
+
+The test suite provides shared fixtures in `conftest.py`:
+
+#### Database Fixtures
+
+```python
+async def test_create_organization(db_session: AsyncSession):
+    """Test creating an organization."""
+    org = Organization(name="test-org", github_url="https://github.com/test-org")
+    db_session.add(org)
+    await db_session.flush()
+
+    assert org.id is not None
+```
+
+#### Cache Fixtures
+
+```python
+async def test_cache_operations(cache: Redis):
+    """Test cache set/get operations."""
+    await cache.set("test_key", "test_value")
+    value = await cache.get("test_key")
+
+    assert value == "test_value"
+```
+
+#### API Client Fixtures
+
+```python
+async def test_api_endpoint(async_client: AsyncClient):
+    """Test API endpoint response."""
+    response = await async_client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+```
+
+### Using Model Factories
+
+The test suite provides factory functions in `factories.py` for easy test data creation:
+
+```python
+from tests.factories import create_organization, create_package, create_repository
+
+async def test_with_factories(db_session: AsyncSession):
+    """Example using model factories."""
+    # Create organization
+    org = await create_organization(
+        db_session=db_session,
+        name="acme-corp",
+        total_stars=1000
+    )
+
+    # Create repository for that organization
+    repo = await create_repository(
+        db_session=db_session,
+        organization=org,
+        name="acme-api",
+        stars=500
+    )
+
+    # Create package
+    pkg = await create_package(
+        db_session=db_session,
+        name="fastapi",
+        ecosystem="pypi"
+    )
+
+    assert repo.organization_id == org.id
+    assert pkg.ecosystem == "pypi"
+```
+
+Available factories:
+- `create_package()` - Package model
+- `create_organization()` - Organization model
+- `create_repository()` - Repository model
+- `create_dependency()` - Dependency model
+- `create_api_key()` - APIKey model
+- `create_full_dependency_chain()` - Complete org → repo → package → dependency chain
+
+### Coverage Configuration
+
+Coverage settings in `pyproject.toml`:
+
+```toml
+[tool.coverage.run]
+source = ["src/app"]
+branch = true
+omit = ["src/tests/*", "src/app/__init__.py"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+```
+
+### CI/CD Testing
+
+GitHub Actions automatically runs tests on every pull request:
+
+- All tests must pass
+- Coverage must be ≥80%
+- Type checking (mypy) must pass
+- Linting (ruff) must pass
+
+See `.github/workflows/ci.yml` for configuration.
+
+### Docker Testing
+
+Run tests in Docker environment:
+
+```bash
+# From repository root
+docker compose exec api uv run pytest
+
+# With coverage
+docker compose exec api uv run pytest --cov=src/app --cov-report=term-missing
+```
+
+### Writing New Tests
+
+Follow these patterns when writing tests:
+
+1. **Use async test functions:**
+   ```python
+   @pytest.mark.asyncio
+   async def test_something():
+       pass
+   ```
+
+2. **Use descriptive test names:**
+   ```python
+   async def test_create_organization_with_valid_data_succeeds():
+       pass
+   ```
+
+3. **Use fixtures for setup:**
+   ```python
+   async def test_repository_creation(db_session: AsyncSession):
+       # db_session is automatically provided and cleaned up
+       pass
+   ```
+
+4. **Use factories for test data:**
+   ```python
+   async def test_with_realistic_data(db_session: AsyncSession):
+       org = await create_organization(db_session=db_session)
+       # org has reasonable defaults
+   ```
+
+5. **Add docstrings:**
+   ```python
+   async def test_health_check(async_client: AsyncClient):
+       """Test that health endpoint returns 200 and correct structure."""
+       pass
+   ```
+
+### Test Development Workflow
+
+1. Write test first (TDD approach):
+   ```bash
+   uv run pytest src/tests/test_new_feature.py -v
+   ```
+
+2. Implement feature
+
+3. Run tests with coverage:
+   ```bash
+   uv run pytest --cov=src/app --cov-report=html
+   open htmlcov/index.html  # View coverage report
+   ```
+
+4. Ensure coverage ≥80%
+
+5. Commit both tests and implementation
+
+---
+
 ## 📚 Related Documentation
 
 - [../ARCHITECTURE.md](../ARCHITECTURE.md) - System design and database schema
