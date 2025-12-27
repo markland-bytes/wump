@@ -139,11 +139,14 @@ async def test_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession,
         autoflush=False,
     )
 
-    # Create session and transaction
+    # Create session and start transaction
     async with async_session_maker() as session:
-        async with session.begin():
+        transaction = await session.begin()
+        try:
             yield session
-            # Transaction rolls back automatically after yield
+        finally:
+            # Always rollback to ensure test isolation
+            await transaction.rollback()
 
 
 @pytest_asyncio.fixture(scope="function")
