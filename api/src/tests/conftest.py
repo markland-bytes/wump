@@ -30,27 +30,11 @@ from app.core.config import Settings
 from app.main import app
 from app.models.base import Base
 
-
-# Additional test environment setup
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment() -> None:
-    """Setup additional test environment variables.
-
-    Note: Critical environment variables (ENVIRONMENT, LOG_LEVEL, OTEL_ENABLED)
-    are set at module level to ensure they're applied before app initialization.
-
-    VALKEY_URL is intentionally NOT set here - tests default to FakeRedis (in-memory).
-    Set VALKEY_URL environment variable to use real Redis/Valkey for testing.
-    """
-    pass
-
-
-# @pytest.fixture(scope="session")
-# def event_loop():
-#     """Create an event loop for the test session."""
-#     loop = asyncio.get_event_loop_policy().new_event_loop()
-#     yield loop
-#     loop.close()
+# Test Environment Configuration:
+# Critical environment variables (ENVIRONMENT, LOG_LEVEL, OTEL_ENABLED, VALKEY_URL)
+# are set at module level (lines 8-13) to ensure they're applied before app initialization.
+# VALKEY_URL is set to empty string to prevent cache creation during imports.
+# Tests default to FakeRedis (in-memory). Set VALKEY_URL to use real Redis/Valkey.
 
 
 @pytest.fixture(scope="session")
@@ -199,7 +183,7 @@ async def test_cache() -> AsyncGenerator[Redis, None]:
     cache_url = os.getenv("VALKEY_URL", None)
 
     # Use FakeRedis by default (in-memory, no service needed)
-    if cache_url is None:
+    if not cache_url:
         client: Redis = FakeAsyncRedis(
             decode_responses=True,
         )
