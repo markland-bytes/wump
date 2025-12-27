@@ -18,9 +18,10 @@ if TYPE_CHECKING:
 class DependencyTypeEnum(str, Enum):
     """Dependency type classification."""
 
-    DIRECT = "direct"
-    DEV = "dev"
-    PEER = "peer"
+    DIRECT = "DIRECT"
+    DEV = "DEV"
+    OPTIONAL = "OPTIONAL"
+    PEER = "PEER"
 
 
 class Dependency(Base, UUIDMixin, TimestampMixin):

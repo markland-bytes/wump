@@ -25,7 +25,7 @@ def upgrade() -> None:
     tier_enum.create(op.get_bind(), checkfirst=True)
     
     dependency_type_enum = postgresql.ENUM(
-        "direct", "dev", "optional", "peer", name="dependencytypeenum", create_type=True
+        "DIRECT", "DEV", "OPTIONAL", "PEER", name="dependencytypeenum", create_type=True
     )
     dependency_type_enum.create(op.get_bind(), checkfirst=True)
 
@@ -57,6 +57,11 @@ def upgrade() -> None:
             server_default=sa.func.now(),
             nullable=False,
             onupdate=sa.func.now(),
+        ),
+        sa.Column(
+            "deleted_at",
+            sa.DateTime(timezone=True),
+            nullable=True,
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name"),
@@ -158,7 +163,7 @@ def upgrade() -> None:
         sa.Column("version", sa.String(), nullable=True),
         sa.Column(
             "dependency_type",
-            postgresql.ENUM("direct", "dev", "optional", "peer", name="dependencytypeenum", create_type=False),
+            postgresql.ENUM("DIRECT", "DEV", "OPTIONAL", "PEER", name="dependencytypeenum", create_type=False),
             nullable=True,
         ),
         sa.Column("detected_at", sa.DateTime(timezone=True), nullable=True),
@@ -268,6 +273,6 @@ def downgrade() -> None:
     postgresql.ENUM("free", "pro", "enterprise", name="tierenum").drop(
         op.get_bind(), checkfirst=True
     )
-    postgresql.ENUM("direct", "dev", "optional", "peer", name="dependencytypeenum").drop(
+    postgresql.ENUM("DIRECT", "DEV", "OPTIONAL", "PEER", name="dependencytypeenum").drop(
         op.get_bind(), checkfirst=True
     )

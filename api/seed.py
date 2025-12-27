@@ -24,49 +24,46 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.core.database import async_session_maker
 from src.app.core.logging import configure_logging, get_logger
-from src.app.models.dependency import Dependency, DependencyTypeEnum
-from src.app.models.organization import Organization
-from src.app.models.package import Package
-from src.app.models.repository import Repository
+from src.app.models import Dependency, DependencyTypeEnum, Organization, Package, Repository
 
 configure_logging()
 logger = get_logger(__name__)
 
-# Sample data
+# Sample data - fictional organizations for demonstration
 ORGANIZATIONS = [
     {
-        "name": "netflix",
-        "github_url": "https://github.com/netflix",
-        "website_url": "https://www.netflix.com",
-        "description": "Netflix Open Source Platform",
+        "name": "techflow",
+        "github_url": "https://github.com/techflow",
+        "website_url": "https://techflow.example.com",
+        "description": "Media streaming and workflow orchestration platform",
         "sponsorship_url": None,
     },
     {
-        "name": "shopify",
-        "github_url": "https://github.com/shopify",
-        "website_url": "https://www.shopify.com",
-        "description": "Commerce platform for online stores",
-        "sponsorship_url": "https://github.com/sponsors/shopify",
+        "name": "shophub",
+        "github_url": "https://github.com/shophub",
+        "website_url": "https://shophub.example.com",
+        "description": "E-commerce platform for modern retail",
+        "sponsorship_url": "https://github.com/sponsors/shophub",
     },
     {
-        "name": "vercel",
-        "github_url": "https://github.com/vercel",
-        "website_url": "https://vercel.com",
-        "description": "Develop. Preview. Ship.",
+        "name": "deploynow",
+        "github_url": "https://github.com/deploynow",
+        "website_url": "https://deploynow.example.com",
+        "description": "Cloud deployment and hosting platform",
         "sponsorship_url": None,
     },
     {
-        "name": "facebook",
-        "github_url": "https://github.com/facebook",
-        "website_url": "https://www.facebook.com",
-        "description": "Meta Platforms, Inc. open source projects",
+        "name": "socialconnect",
+        "github_url": "https://github.com/socialconnect",
+        "website_url": "https://socialconnect.example.com",
+        "description": "Open source social networking tools",
         "sponsorship_url": None,
     },
     {
-        "name": "microsoft",
-        "github_url": "https://github.com/microsoft",
-        "website_url": "https://www.microsoft.com",
-        "description": "Open source projects and samples from Microsoft",
+        "name": "devtools-corp",
+        "github_url": "https://github.com/devtools-corp",
+        "website_url": "https://devtools.example.com",
+        "description": "Developer tools and productivity software",
         "sponsorship_url": None,
     },
 ]
@@ -138,19 +135,19 @@ PACKAGES = [
     },
 ]
 
-# Repositories for each organization
+# Repositories for each organization (fictional)
 REPOSITORIES = {
-    "netflix": [
+    "techflow": [
         {
             "name": "conductor",
-            "github_url": "https://github.com/Netflix/conductor",
+            "github_url": "https://github.com/techflow/conductor",
             "stars": 17800,
             "primary_language": "Java",
             "dependencies": [],  # Java project, no Python/JS dependencies in this example
         },
         {
-            "name": "metaflow",
-            "github_url": "https://github.com/Netflix/metaflow",
+            "name": "dataflow",
+            "github_url": "https://github.com/techflow/dataflow",
             "stars": 8200,
             "primary_language": "Python",
             "dependencies": [
@@ -158,10 +155,10 @@ REPOSITORIES = {
             ],
         },
     ],
-    "shopify": [
+    "shophub": [
         {
-            "name": "polaris",
-            "github_url": "https://github.com/Shopify/polaris",
+            "name": "storefront-ui",
+            "github_url": "https://github.com/shophub/storefront-ui",
             "stars": 5700,
             "primary_language": "TypeScript",
             "dependencies": [
@@ -170,8 +167,8 @@ REPOSITORIES = {
             ],
         },
         {
-            "name": "hydrogen",
-            "github_url": "https://github.com/Shopify/hydrogen",
+            "name": "commerce-framework",
+            "github_url": "https://github.com/shophub/commerce-framework",
             "stars": 1400,
             "primary_language": "TypeScript",
             "dependencies": [
@@ -180,10 +177,10 @@ REPOSITORIES = {
             ],
         },
     ],
-    "vercel": [
+    "deploynow": [
         {
-            "name": "next.js",
-            "github_url": "https://github.com/vercel/next.js",
+            "name": "web-framework",
+            "github_url": "https://github.com/deploynow/web-framework",
             "stars": 128000,
             "primary_language": "TypeScript",
             "dependencies": [
@@ -192,8 +189,8 @@ REPOSITORIES = {
             ],
         },
         {
-            "name": "swr",
-            "github_url": "https://github.com/vercel/swr",
+            "name": "state-manager",
+            "github_url": "https://github.com/deploynow/state-manager",
             "stars": 30500,
             "primary_language": "TypeScript",
             "dependencies": [
@@ -201,26 +198,26 @@ REPOSITORIES = {
             ],
         },
     ],
-    "facebook": [
+    "socialconnect": [
         {
-            "name": "react",
-            "github_url": "https://github.com/facebook/react",
+            "name": "ui-toolkit",
+            "github_url": "https://github.com/socialconnect/ui-toolkit",
             "stars": 230000,
             "primary_language": "JavaScript",
-            "dependencies": [],  # React has minimal dependencies
+            "dependencies": [],  # Minimal dependencies
         },
     ],
-    "microsoft": [
+    "devtools-corp": [
         {
-            "name": "TypeScript",
-            "github_url": "https://github.com/microsoft/TypeScript",
+            "name": "typelang",
+            "github_url": "https://github.com/devtools-corp/typelang",
             "stars": 101000,
             "primary_language": "TypeScript",
-            "dependencies": [],  # TypeScript is foundational
+            "dependencies": [],  # Foundational tool
         },
         {
-            "name": "vscode",
-            "github_url": "https://github.com/microsoft/vscode",
+            "name": "code-editor",
+            "github_url": "https://github.com/devtools-corp/code-editor",
             "stars": 164000,
             "primary_language": "TypeScript",
             "dependencies": [
@@ -372,11 +369,16 @@ async def seed_repositories_and_dependencies(
                         f"Dependency already exists: {repo_data['name']} -> {dep_data['package']}"
                     )
                 else:
+                    # Convert lowercase type string to uppercase for enum
+                    dep_type = dep_data.get("type")
+                    if dep_type:
+                        dep_type = dep_type.upper()
+
                     dependency = Dependency(
                         repository_id=repo.id,
                         package_id=pkg.id,
                         version=dep_data["version"],
-                        dependency_type=DependencyTypeEnum(dep_data["type"]),
+                        dependency_type=dep_type,
                     )
                     session.add(dependency)
                     logger.info(
