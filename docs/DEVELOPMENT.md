@@ -354,6 +354,37 @@ async def test_package_creation(db_session):
 
 ---
 
+## Repository Pattern
+
+We use a **composition-based repository pattern** for data access. This provides:
+- Generic CRUD operations with type safety
+- Soft delete support with automatic filtering
+- Pagination with validation
+- OpenTelemetry tracing
+- Structured logging
+
+**For detailed documentation and examples, see:**
+- [docs/private/coding/REPOSITORY_README.md](private/coding/REPOSITORY_README.md)
+
+**Quick example:**
+```python
+from app.repositories.organization import OrganizationRepository
+
+class OrganizationRepository:
+    def __init__(self, session: AsyncSession):
+        self._base_repo = BaseRepository(session, Organization)
+    
+    async def get(self, org_id: uuid.UUID) -> Organization:
+        return await self._base_repo.get(org_id)
+    
+    # Custom methods for organization-specific queries
+    async def get_by_name(self, name: str) -> Organization | None:
+        # Custom implementation...
+        pass
+```
+
+---
+
 ## Code Style
 
 ### Python Style

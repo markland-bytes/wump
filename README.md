@@ -40,8 +40,23 @@ Access the API at:
 - **Interactive docs**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 - **Health check**: http://localhost:8000/health
+- **Jaeger UI** (tracing): http://localhost:16686
 
-For detailed setup instructions, see [QUICKSTART.md](QUICKSTART.md)
+For detailed setup instructions, see [QUICKSTART.md](docs/QUICKSTART.md)
+
+### Seed Database
+
+To populate the database with sample data for development:
+
+```bash
+# Using Docker
+docker compose exec api uv run python seed.py
+
+# Local development
+cd api && uv run python seed.py
+```
+
+The seed script is idempotent and creates realistic sample data including fictional organizations, popular packages (React, FastAPI, etc.), and their relationships.
 
 ### Local Development
 
@@ -58,24 +73,96 @@ For running commands directly on your machine (e.g., `uv run pytest`, `uv run my
 ```
 wump/                    # Repository root & orchestration
 ├── api/                 # REST API service (FastAPI)
+├── docs/                # Documentation
 ├── docker-compose.yml   # Service orchestration
-├── ARCHITECTURE.md      # Technical design & database schema
-├── DEVELOPMENT.md       # Contributing guidelines
-├── QUICKSTART.md        # 5-minute setup guide
+├── CLAUDE.md            # AI assistant guide
 └── README.md            # This file
 ```
+
+## 🗄️ Database Schema
+
+The system uses PostgreSQL 18 with the following core tables:
+
+```
+┌─────────────────────────┐
+│     organizations       │
+│─────────────────────────│
+│ id (UUID, PK)           │
+│ name (unique)           │◄───┐
+│ github_url              │    │
+│ website_url             │    │
+│ sponsorship_url         │    │
+│ total_repositories      │    │
+│ total_stars             │    │
+│ created_at, updated_at  │    │
+│ deleted_at              │    │
+└─────────────────────────┘    │
+                               │
+                               │ 1:N
+                               │
+┌─────────────────────────┐    │
+│      repositories       │    │
+│─────────────────────────│    │
+│ id (UUID, PK)           │    │
+│ organization_id (FK)    │────┘
+│ name                    │
+│ github_url (unique)     │
+│ stars                   │◄───┐
+│ last_commit_at          │    │
+│ is_archived             │    │
+│ primary_language        │    │ 1:N
+│ created_at, updated_at  │    │
+└─────────────────────────┘    │
+                               │
+                               │
+┌─────────────────────────┐    │
+│      dependencies       │    │
+│─────────────────────────│    │
+│ id (UUID, PK)           │    │
+│ repository_id (FK)      │────┘
+│ package_id (FK)         │────┐
+│ version                 │    │
+│ dependency_type         │    │
+│ detected_at             │    │
+│ created_at, updated_at  │    │
+└─────────────────────────┘    │
+                               │ N:1
+                               │
+┌─────────────────────────┐    │
+│        packages         │    │
+│─────────────────────────│    │
+│ id (UUID, PK)           │◄───┘
+│ name                    │
+│ ecosystem (npm/pypi/..) │
+│ description             │
+│ repository_url          │
+│ homepage_url            │
+│ latest_version          │
+│ created_at, updated_at  │
+└─────────────────────────┘
+```
+
+**Key Relationships:**
+- Organizations have many Repositories (1:N)
+- Repositories have many Dependencies (1:N)
+- Packages are linked to Repositories through Dependencies (M:N)
+- Organizations table includes soft delete support (`deleted_at`)
+
+For full schema details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## 📚 Documentation & Contributing
 
 **Getting Started:**
-- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute setup guide with Docker
+- **[QUICKSTART.md](docs/QUICKSTART.md)** - 5-minute setup guide with Docker
 
 **Contributing & Development:**
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Git workflow, commit conventions, PR process
+- **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Git workflow, commit conventions, PR process
 
 **Technical Details:**
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and database schema
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and database schema
 - **[api/README.md](api/README.md)** - API service development setup and commands
+- **[API_EXAMPLES.md](docs/API_EXAMPLES.md)** - API usage examples and curl commands
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## 📝 License
 
@@ -83,7 +170,7 @@ MIT
 
 ## 🗺️ Roadmap
 
-- **Phase 1 (Current)**: Foundation - Database models, migrations, basic API
+- **Phase 1 (✅ Complete)**: Foundation - Database models, migrations, repository pattern, testing
 - **Phase 2**: Core API - CRUD endpoints, search, pagination
 - **Phase 3**: Background Jobs - Data ingestion from GitHub/Libraries.io
 - **Phase 4**: Infrastructure - OpenTofu, Railway/AWS deployment
@@ -101,6 +188,6 @@ Self-hosting is free and encouraged for private deployments!
 
 ---
 
-**Status**: 🚧 In Development - Phase 1 (Foundation)  
+**Status**: 🚧 In Development - Phase 1 Complete, Phase 2 Starting  
 **License**: MIT  
 **Maintainer**: [@markland-bytes](https://github.com/markland-bytes)

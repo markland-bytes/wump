@@ -105,7 +105,7 @@ QUIT
 
 ### Layered Architecture
 
-The API follows a strict layered architecture (see ARCHITECTURE.md for full details):
+The API follows a strict layered architecture (see docs/ARCHITECTURE.md for full details):
 
 1. **HTTP Layer** (`app/main.py`): FastAPI application factory, route definitions, lifespan management
 2. **API Layer** (`app/api/`): Route handlers, request/response models (TBD - Phase 2)
@@ -235,7 +235,7 @@ async def test_something(db_session: AsyncSession):
 - **Commit format**: `<type>: <subject>` (e.g., `feat: add health check endpoint`)
 - **Types**: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `perf`
 
-See DEVELOPMENT.md for detailed Git workflow, commit conventions, and PR process.
+See docs/DEVELOPMENT.md for detailed Git workflow, commit conventions, and PR process.
 
 ### Creating a New Feature
 
@@ -401,7 +401,7 @@ deleted = await repo.delete(org_id, soft=False)
 The architecture supports extensible data providers via a registry pattern:
 
 - **Phase 2+**: GitHubProvider, LibrariesIoProvider
-- **Provider Pattern**: All providers implement `DataProvider` interface (see ARCHITECTURE.md section 3.5)
+- **Provider Pattern**: All providers implement `DataProvider` interface (see docs/ARCHITECTURE.md section 3.5)
 - **Credentials**: Store in environment variables, never in code
 
 ## Deployment
@@ -410,13 +410,13 @@ The architecture supports extensible data providers via a registry pattern:
 - **Production** (future): AWS ECS with Fargate, OpenTofu for IaC
 - **CI/CD**: GitHub Actions (`.github/workflows/ci.yml`)
 
-See ARCHITECTURE.md for detailed deployment architecture and infrastructure design.
+See docs/ARCHITECTURE.md for detailed deployment architecture and infrastructure design.
 
 ## Documentation References
 
-- **ARCHITECTURE.md**: System design, database schema, technology decisions
-- **DEVELOPMENT.md**: Git workflow, commit conventions, PR process, testing guidelines
-- **QUICKSTART.md**: 5-minute setup guide
+- **docs/ARCHITECTURE.md**: System design, database schema, technology decisions
+- **docs/DEVELOPMENT.md**: Git workflow, commit conventions, PR process, testing guidelines
+- **docs/QUICKSTART.md**: 5-minute setup guide
 - **api/README.md**: API service-specific documentation, database migrations, health checks
 
 ## Phase Roadmap

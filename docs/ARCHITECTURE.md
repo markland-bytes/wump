@@ -48,7 +48,7 @@ This project follows an **open-core model**:
 #### Stage 1: MVP (Weeks 1-4)
 ```
 Docker Compose (Local Dev)
-├── Fastify API (single container)
+├── FastAPI (Python 3.14, single container)
 ├── Postgres 18
 └── Valkey
 
@@ -115,8 +115,8 @@ Cost: $200-500/month
 ├───────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │   Fastify   │  │     Auth     │  │   Rate Limiter   │   │
-│  │   Router    │  │    Plugin    │  │      Plugin      │   │
+│  │   FastAPI   │  │     Auth     │  │   Rate Limiter   │   │
+│  │   Router    │  │  Middleware  │  │    Middleware    │   │
 │  └──────┬──────┘  └──────┬───────┘  └────────┬─────────┘   │
 │         │                │                    │              │
 │  ┌──────▼────────────────▼────────────────────▼─────────┐   │
@@ -142,7 +142,7 @@ Cost: $200-500/month
 │  ┌──────▼────────────────────────────────────────────────┐   │
 │  │              Data Access Layer (DAL)                  │   │
 │  │  - Repository Pattern                                 │   │
-│  │  - ORM (Prisma)                                       │   │
+│  │  - ORM (SQLAlchemy 2.0 async)                        │   │
 │  └──────┬────────────────────────────────────────────────┘   │
 └─────────┼─────────────────────────────────────────────────────┘
           │
@@ -902,10 +902,10 @@ resource "aws_secretsmanager_secret" "api_keys" {
 ### 6.3 Development Environment (Open Source)
 ```
 Docker Compose:
-- API Service (Node.js container)
-- PostgreSQL (postgres:15 container)
-- Redis (redis:7 container)
-- Job Worker (Node.js container)
+- API Service (Python 3.14 container)
+- PostgreSQL (postgres:18 container)
+- Valkey (valkey:8 container, Redis-compatible)
+- Job Worker (Python 3.14 container, Celery - future)
 ```
 
 ### 6.2 Production Architecture (Future)
@@ -1142,15 +1142,15 @@ structlog.configure(
 **Example Trace for Package Lookup:**
 ```
 HTTP GET /api/v1/packages/express/dependents
-  ├─ fastify.request (10ms)
+  ├─ fastapi.request (10ms)
   ├─ auth.validateApiKey (5ms)
   ├─ ratelimit.check (3ms)
   ├─ packageService.getDependents (450ms)
-  │   ├─ redis.get cache:package:npm:express:* (2ms) [MISS]
+  │   ├─ valkey.get cache:package:npm:express:* (2ms) [MISS]
   │   ├─ db.query SELECT * FROM dependencies... (380ms)
   │   ├─ db.query SELECT * FROM organizations... (60ms)
-  │   └─ redis.setex cache:package:npm:express:* (5ms)
-  └─ fastify.response (3ms)
+  │   └─ valkey.setex cache:package:npm:express:* (5ms)
+  └─ fastapi.response (3ms)
 Total: 471ms
 ```
 

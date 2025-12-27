@@ -1,0 +1,20 @@
+{
+  "recommendations": [
+    // Python Development - Required
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+
+    // Docker - Required for this project
+    "ms-azuretools.vscode-docker",
+
+    // Database - Recommended for PostgreSQL work
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+
+    // Config Files - Recommended for YAML/TOML editing
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml"
+  ]
+}
