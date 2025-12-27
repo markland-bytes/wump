@@ -56,7 +56,7 @@ docker compose exec api uv run python seed.py
 cd api && uv run python seed.py
 ```
 
-The seed script is idempotent and creates realistic sample data including organizations (Netflix, Shopify, etc.), popular packages (React, FastAPI, etc.), and their relationships.
+The seed script is idempotent and creates realistic sample data including fictional organizations, popular packages (React, FastAPI, etc.), and their relationships.
 
 ### Local Development
 
@@ -170,7 +170,7 @@ MIT
 
 ## 🗺️ Roadmap
 
-- **Phase 1 (Current)**: Foundation - Database models, migrations, basic API
+- **Phase 1 (✅ Complete)**: Foundation - Database models, migrations, repository pattern, testing
 - **Phase 2**: Core API - CRUD endpoints, search, pagination
 - **Phase 3**: Background Jobs - Data ingestion from GitHub/Libraries.io
 - **Phase 4**: Infrastructure - OpenTofu, Railway/AWS deployment
@@ -188,6 +188,6 @@ Self-hosting is free and encouraged for private deployments!
 
 ---
 
-**Status**: 🚧 In Development - Phase 1 (Foundation)  
+**Status**: 🚧 In Development - Phase 1 Complete, Phase 2 Starting  
 **License**: MIT  
 **Maintainer**: [@markland-bytes](https://github.com/markland-bytes)
