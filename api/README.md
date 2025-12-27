@@ -49,7 +49,7 @@ docker compose logs -f api   # View logs
 docker compose down          # Stop services
 ```
 
-See [QUICKSTART.md](../QUICKSTART.md) for detailed setup.
+See [QUICKSTART.md](../docs/QUICKSTART.md) for detailed setup.
 
 ### Local Development
 
@@ -632,7 +632,7 @@ Follow these patterns when writing tests:
 
 ## 📚 Related Documentation
 
-- [../ARCHITECTURE.md](../ARCHITECTURE.md) - System design and database schema
-- [../DEVELOPMENT.md](../DEVELOPMENT.md) - Git workflow and code standards
-- [../QUICKSTART.md](../QUICKSTART.md) - Project-level setup instructions
+- [../docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) - System design and database schema
+- [../docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md) - Git workflow and code standards
+- [../docs/QUICKSTART.md](../docs/QUICKSTART.md) - Project-level setup instructions
 

@@ -1,0 +1,131 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run API (uvicorn)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "src.app.main:app",
+        "--reload",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "cwd": "${workspaceFolder}/api",
+      "env": {
+        "ENVIRONMENT": "development",
+        "DATABASE_URL": "postgresql+asyncpg://postgres:postgres@localhost:5432/wump",
+        "VALKEY_URL": "redis://localhost:6379/0",
+        "LOG_LEVEL": "DEBUG",
+        "LOG_FORMAT": "console",
+        "OTEL_ENABLED": "false"
+      },
+      "jinja": true,
+      "justMyCode": false,
+      "console": "integratedTerminal",
+      "presentation": {
+        "hidden": false,
+        "group": "api",
+        "order": 1
+      }
+    },
+    {
+      "name": "Debug Tests (pytest)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "-v",
+        "-s",
+        "--no-cov"
+      ],
+      "cwd": "${workspaceFolder}/api",
+      "env": {
+        "ENVIRONMENT": "testing",
+        "LOG_LEVEL": "WARNING",
+        "OTEL_ENABLED": "false"
+      },
+      "jinja": true,
+      "justMyCode": false,
+      "console": "integratedTerminal",
+      "presentation": {
+        "hidden": false,
+        "group": "testing",
+        "order": 1
+      }
+    },
+    {
+      "name": "Debug Current Test File",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "${file}",
+        "-v",
+        "-s",
+        "--no-cov"
+      ],
+      "cwd": "${workspaceFolder}/api",
+      "env": {
+        "ENVIRONMENT": "testing",
+        "LOG_LEVEL": "WARNING",
+        "OTEL_ENABLED": "false"
+      },
+      "jinja": true,
+      "justMyCode": false,
+      "console": "integratedTerminal",
+      "presentation": {
+        "hidden": false,
+        "group": "testing",
+        "order": 2
+      }
+    },
+    {
+      "name": "Debug Seed Script",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/api/seed.py",
+      "cwd": "${workspaceFolder}/api",
+      "env": {
+        "ENVIRONMENT": "development",
+        "DATABASE_URL": "postgresql+asyncpg://postgres:postgres@localhost:5432/wump",
+        "VALKEY_URL": "redis://localhost:6379/0",
+        "LOG_LEVEL": "DEBUG",
+        "OTEL_ENABLED": "false"
+      },
+      "jinja": true,
+      "justMyCode": false,
+      "console": "integratedTerminal",
+      "presentation": {
+        "hidden": false,
+        "group": "scripts",
+        "order": 1
+      }
+    },
+    {
+      "name": "Attach to Docker Container",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 5678
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/api/src",
+          "remoteRoot": "/code/src"
+        }
+      ],
+      "jinja": true,
+      "justMyCode": false,
+      "presentation": {
+        "hidden": false,
+        "group": "docker",
+        "order": 1
+      }
+    }
+  ]
+}

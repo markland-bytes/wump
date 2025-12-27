@@ -1,0 +1,33 @@
+{
+  "recommendations": [
+    // Python Development
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+
+    // Docker & Containers
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+
+    // Database
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+
+    // Git & Version Control
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+
+    // YAML & Config Files
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+
+    // Markdown & Documentation
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+
+    // Code Quality
+    "editorconfig.editorconfig",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}

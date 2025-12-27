@@ -1,0 +1,91 @@
+{
+  // Python Configuration
+  "python.defaultInterpreterPath": "${workspaceFolder}/api/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+
+  // Testing
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "src/tests",
+    "-v"
+  ],
+
+  // Linting & Formatting
+  "python.linting.enabled": true,
+  "python.linting.mypyEnabled": true,
+  "python.linting.mypyArgs": [
+    "--strict"
+  ],
+  "python.formatting.provider": "none",
+
+  // Ruff (linting and formatting)
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+
+  // File Associations
+  "files.associations": {
+    "*.env.example": "properties",
+    "Dockerfile*": "dockerfile",
+    "docker-compose*.yml": "yaml"
+  },
+
+  // Exclude from Explorer
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/htmlcov": true,
+    "**/.coverage": true
+  },
+
+  // Search Exclude
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/htmlcov": true,
+    "**/.coverage": true,
+    "**/uv.lock": true
+  },
+
+  // Editor Settings
+  "editor.rulers": [100],
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+
+  // Docker
+  "docker.commands.composeUp": ["docker", "compose", "up", "-d"],
+  "docker.commands.composeDown": ["docker", "compose", "down"],
+
+  // Terminal
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}/api/src"
+  },
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}/api/src"
+  },
+
+  // File Watchers (performance optimization)
+  "files.watcherExclude": {
+    "**/__pycache__/**": true,
+    "**/.pytest_cache/**": true,
+    "**/.mypy_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/htmlcov/**": true,
+    "**/uv.lock": true
+  }
+}
