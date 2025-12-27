@@ -55,20 +55,26 @@ class TestCreateClient:
                 assert "valkey" in call_args[0]
 
     def test_create_client_missing_valkey_url(self) -> None:
-        """Test client creation fails with missing VALKEY_URL."""
+        """Test client creation uses FakeRedis when VALKEY_URL is empty and FakeRedis is available."""
         with patch("app.core.cache.settings") as mock_settings:
             mock_settings.valkey_url = ""
 
-            with pytest.raises(ValueError, match=CacheErrorMessage.CREATE_CLIENT_NO_URL):
-                create_client()
+            # When FakeRedis is available (which it is in tests), should return FakeRedis client
+            client = create_client()
+            assert client is not None
+            # FakeRedis client should be usable
+            assert hasattr(client, 'ping')
 
     def test_create_client_none_valkey_url(self) -> None:
-        """Test client creation fails with None VALKEY_URL."""
+        """Test client creation uses FakeRedis when VALKEY_URL is None and FakeRedis is available."""
         with patch("app.core.cache.settings") as mock_settings:
             mock_settings.valkey_url = None
 
-            with pytest.raises(ValueError, match=CacheErrorMessage.CREATE_CLIENT_NO_URL):
-                create_client()
+            # When FakeRedis is available (which it is in tests), should return FakeRedis client
+            client = create_client()
+            assert client is not None
+            # FakeRedis client should be usable
+            assert hasattr(client, 'ping')
 
     def test_create_client_unexpected_error_masked(self) -> None:
         """Test that unexpected errors during client creation are masked."""

@@ -69,6 +69,29 @@ services:
       timeout: 5s
       retries: 5
 
+  # Dedicated test service that mirrors GitHub Actions environment
+  # Uses SQLite in-memory (no DATABASE_URL) and FakeRedis (no VALKEY_URL)
+  # Completely self-contained - no external service dependencies!
+  test:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    volumes:
+      - ./api/src:/code/src
+    environment:
+      # No DATABASE_URL - defaults to SQLite in-memory via conftest.py
+      # No VALKEY_URL - defaults to FakeRedis in-memory via conftest.py
+      - ENVIRONMENT=testing
+      - LOG_LEVEL=WARNING
+      - OTEL_ENABLED=false  # Disable tracing for tests
+      - PYTHONDONTWRITEBYTECODE=1  # Don't create .pyc files
+    # No service dependencies - fully self-contained!
+    # Skip migrations - SQLite in-memory doesn't need them
+    entrypoint: []
+    command: uv run python run_tests.py
+    profiles:
+      - test
+
 volumes:
   postgres_data:
   valkey_data:

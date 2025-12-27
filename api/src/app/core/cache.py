@@ -9,6 +9,13 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.tracing import trace_cache
 
+# Import FakeRedis for testing
+try:
+    from fakeredis import FakeAsyncRedis
+    FAKEREDIS_AVAILABLE = True
+except ImportError:
+    FAKEREDIS_AVAILABLE = False
+
 logger = get_logger(__name__)
 
 
@@ -26,9 +33,9 @@ def create_client() -> Redis:
     """Create async Redis client with connection pooling.
 
     Returns:
-        Redis: Configured async Redis client
+        Redis: Configured async Redis client (or FakeRedis for testing)
 
-    Connection Pool Configuration:
+    Connection Pool Configuration (real Redis only):
         - max_connections: Maximum connections in the pool (default: 20)
         - decode_responses: Whether to decode responses (True for string)
         - socket_connect_timeout: Timeout for socket connection (default: 5s)
@@ -39,6 +46,11 @@ def create_client() -> Redis:
         ValueError: If Valkey URL is invalid or settings are misconfigured
     """
     try:
+        # Use FakeRedis for testing when VALKEY_URL is empty/not set
+        if not settings.valkey_url and FAKEREDIS_AVAILABLE:
+            logger.info("Creating FakeRedis client for testing")
+            return FakeAsyncRedis(decode_responses=True)  # type: ignore[return-value]
+
         if not settings.valkey_url:
             raise ValueError(CacheErrorMessage.CREATE_CLIENT_NO_URL)
 
@@ -129,8 +141,9 @@ async def close_cache() -> None:
     try:
         logger.info("Closing cache connections")
         await cache_client.close()
-        # Wait for connection pool to be cleaned up
-        await cache_client.connection_pool.disconnect()
+        # Wait for connection pool to be cleaned up (real Redis only)
+        if hasattr(cache_client, 'connection_pool'):
+            await cache_client.connection_pool.disconnect()
     except Exception as e:
         logger.error(f"Error closing cache connections: {e}")
         raise RuntimeError(CacheErrorMessage.CLOSE_CACHE_FAILED) from e
