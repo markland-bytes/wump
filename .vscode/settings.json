@@ -59,13 +59,6 @@
     "**/uv.lock": true
   },
 
-  // Editor Settings
-  "editor.rulers": [100],
-  "editor.formatOnSave": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "explicit"
-  },
-
   // Docker
   "docker.commands.composeUp": ["docker", "compose", "up", "-d"],
   "docker.commands.composeDown": ["docker", "compose", "down"],
