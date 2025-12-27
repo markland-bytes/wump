@@ -48,15 +48,18 @@ async def create_package(
             ecosystem="pypi"
         )
     """
+    # Generate unique name if not provided
+    default_name = kwargs.get("name", f"test-package-{uuid.uuid4().hex[:8]}")
+
     defaults = {
-        "name": kwargs.get("name", "test-package"),
+        "name": default_name,
         "ecosystem": kwargs.get("ecosystem", "npm"),
         "description": kwargs.get("description", "A test package"),
         "repository_url": kwargs.get(
             "repository_url",
-            "https://github.com/test-org/test-package"
+            f"https://github.com/test-org/{default_name}"
         ),
-        "homepage_url": kwargs.get("homepage_url", "https://test-package.com"),
+        "homepage_url": kwargs.get("homepage_url", f"https://{default_name}.com"),
         "latest_version": kwargs.get("latest_version", "1.0.0"),
     }
 

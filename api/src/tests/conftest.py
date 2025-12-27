@@ -163,8 +163,11 @@ async def db_session(test_session: AsyncSession) -> AsyncSession:
 
 
 @pytest_asyncio.fixture(scope="session")
-async def verify_test_database() -> bool:
+async def verify_test_database(test_engine: AsyncEngine) -> bool:
     """Verify test database connection is available.
+
+    Args:
+        test_engine: Test database engine
 
     Returns:
         bool: True if database is accessible
@@ -172,29 +175,12 @@ async def verify_test_database() -> bool:
     Raises:
         RuntimeError: If database connection fails
     """
-    database_url = os.getenv(
-        "DATABASE_URL",
-        "sqlite+aiosqlite:///:memory:"
-    )
-
-    # Configure engine based on database type
-    if database_url.startswith("sqlite"):
-        engine = create_async_engine(
-            database_url,
-            echo=False,
-            connect_args={"check_same_thread": False},
-        )
-    else:
-        engine = create_async_engine(database_url, echo=False)
-
     try:
-        async with engine.begin() as conn:
+        async with test_engine.begin() as conn:
             await conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
         raise RuntimeError(f"Test database connection failed: {e}") from e
-    finally:
-        await engine.dispose()
 
 
 # ===== Cache Fixtures =====
